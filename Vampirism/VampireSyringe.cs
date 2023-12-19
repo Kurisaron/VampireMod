@@ -24,20 +24,18 @@ namespace Vampirism
     {
         public VampireSyringeModule module;
         
-        public override void InjectPlayer()
+        public override void InjectCreature()
         {
-            base.InjectPlayer();
+            base.InjectCreature();
 
-            if (!VampireMaster.local.isVampire)
+            Creature creature = piercedCreature;
+            if (creature != null)
             {
-                VampireMaster.local.Vampirize(true, module.levelsToAdd);
+                if (creature.IsVampire(out Vampire vampire))
+                    vampire.LevelUp(module.levelsToAdd);
+                else
+                    creature.Vampirize(module.levelsToAdd, 0, module.levelsToAdd - 1);
             }
-            else
-            {
-                VampireMaster.local.LevelUp(module.levelsToAdd, false);
-            }
-
-            
         }
     }
 }

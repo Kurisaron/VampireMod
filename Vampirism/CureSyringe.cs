@@ -20,19 +20,11 @@ namespace Vampirism
 
     public class GarlicSyringeComponent : SyringeComponent
     {
-        public override void InjectPlayer()
+        public override void InjectCreature()
         {
-            base.InjectPlayer();
+            base.InjectCreature();
 
-            if (VampireMaster.local.isVampire)
-            {
-                VampireMaster.local.Vampirize(false);
-            }
-            else
-            {
-                
-            }
-
+            if (piercedCreature != null && piercedCreature.IsVampire(out Vampire vampire)) piercedCreature.CureVampirism();
 
         }
     }

@@ -20,6 +20,7 @@ namespace Vampirism
         private Dictionary<Ability, int> abilities;
 
         public static VampireCreatedEvent createdEvent;
+        public static VampireLevelEvent levelEvent;
 
         public Vampire Init(Creature newCreature, int startingLevel, float startingXP, int startingPoints)
         {
@@ -41,7 +42,7 @@ namespace Vampirism
 
                 }
             }
-            
+
             VampireCreatedEvent newVampire = createdEvent;
             if (newVampire != null)
                 newVampire(this);
@@ -49,11 +50,32 @@ namespace Vampirism
             return this;
         }
 
-        private void Update()
+        public void EarnXP(float amount)
+        {
+            xp += amount;
+
+            float required = GetXPRequirement();
+            while (xp >= required) 
+            {
+                xp -= required;
+                level.current += 1;
+                required = GetXPRequirement();
+            }
+
+            VampireLevelEvent vampireLevel = levelEvent;
+            if (vampireLevel != null) vampireLevel(this, level.current);
+
+
+
+            float GetXPRequirement() => (50.0f * Mathf.Pow(level.current, 2.0f)) + (20.0f * level.current);
+        }
+
+        public void LevelUp(int amount = 1)
         {
 
         }
 
         public delegate void VampireCreatedEvent(Vampire vampire);
+        public delegate void VampireLevelEvent(Vampire vampire, int level);
     }
 }

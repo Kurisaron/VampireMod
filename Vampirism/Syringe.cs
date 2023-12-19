@@ -13,7 +13,8 @@ namespace Vampirism
     {
         // VARIABLES
         public Item item;
-        public bool isPiercingPlayer;
+        public Creature piercedCreature;
+        public bool isPiercingCreature { get => piercedCreature != null; }
         public bool isUsed;
         public Animator syringeAnimator;
 
@@ -37,7 +38,7 @@ namespace Vampirism
             SetFill(fillLevel);
             //Debug.Log("SyringeComponent: Fill has been initialized.");
 
-            isPiercingPlayer = false;
+            piercedCreature = null;
             item.mainCollisionHandler.OnCollisionStartEvent += new CollisionHandler.CollisionEvent(MainCollisionHandler_OnCollisionStartEvent);
             item.OnHeldActionEvent += new Item.HeldActionDelegate(Item_OnHeldActionEvent);
 
@@ -48,9 +49,9 @@ namespace Vampirism
 
         public void Update()
         {
-            if (!item.isPenetrating && isPiercingPlayer)
+            if (!item.isPenetrating && isPiercingCreature)
             {
-                isPiercingPlayer = false;
+                piercedCreature = null;
                 //Debug.Log("SyringeComponent: Syringe is no longer stabbing player.");
             }
         }
@@ -58,14 +59,14 @@ namespace Vampirism
         public void MainCollisionHandler_OnCollisionStartEvent(CollisionInstance collisionInstance)
         {
             // Check if syringe is in player
-            if (collisionInstance.damageStruct.hitRagdollPart != null && collisionInstance.damageStruct.hitRagdollPart.ragdoll != null && collisionInstance.damageStruct.hitRagdollPart.ragdoll.creature.isPlayer)
+            if (collisionInstance.damageStruct.hitRagdollPart != null && collisionInstance.damageStruct.hitRagdollPart.ragdoll != null)
             {
-                isPiercingPlayer = true;
-                //Debug.Log("SyringeComponent: Syringe is stabbing player.");
+                piercedCreature = collisionInstance.damageStruct.hitRagdollPart.ragdoll.creature;
+                //Debug.Log("SyringeComponent: Syringe is stabbing creature.");
             }
             else
             {
-                isPiercingPlayer = false;
+                piercedCreature = null;
             }
         }
 
@@ -73,9 +74,9 @@ namespace Vampirism
         {
             if (action == Interactable.Action.AlternateUseStart)
             {
-                if (isPiercingPlayer && !isUsed)
+                if (isPiercingCreature && !isUsed)
                 {
-                    InjectPlayer();
+                    InjectCreature();
                 }
                 else
                 {
@@ -109,7 +110,7 @@ namespace Vampirism
             //Debug.Log("SyringeComponent: Ungrab event activated.");
         }
 
-        public virtual void InjectPlayer()
+        public virtual void InjectCreature()
         {
             //Debug.Log("SyringeComponent: Injecting player...");
 

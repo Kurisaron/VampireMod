@@ -65,6 +65,12 @@ namespace Vampirism
             if (vampire != null) MonoBehaviour.Destroy(vampire);
         }
 
+        public static bool IsVampire(this Creature creature, out Vampire vampire)
+        {
+            vampire = creature.gameObject.GetComponent<Vampire>();
+            return vampire != null;
+        }
+
         public static void SetVampireEyes(this Creature creature, int level = 1)
         {
             (Color normal, Color min, Color max) irisColor = VampireConfig.Instance.IrisColor;
