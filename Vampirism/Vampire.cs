@@ -54,24 +54,28 @@ namespace Vampirism
         {
             xp += amount;
 
-            float required = GetXPRequirement();
+            float required = GetXPRequirement(level.current);
+            int levelUpAmount = 0;
             while (xp >= required) 
             {
                 xp -= required;
-                level.current += 1;
-                required = GetXPRequirement();
+                levelUpAmount += 1;
+                required = GetXPRequirement(level.current + levelUpAmount);
             }
 
-            VampireLevelEvent vampireLevel = levelEvent;
-            if (vampireLevel != null) vampireLevel(this, level.current);
+            LevelUp(levelUpAmount);
 
 
-
-            float GetXPRequirement() => (50.0f * Mathf.Pow(level.current, 2.0f)) + (20.0f * level.current);
+            // LOCAL FUNCTION
+            float GetXPRequirement(int levelAmount) => (50.0f * Mathf.Pow(level.current, 2.0f)) + (20.0f * level.current);
         }
 
         public void LevelUp(int amount = 1)
         {
+            level.current += amount;
+
+            VampireLevelEvent vampireLevel = levelEvent;
+            if (vampireLevel != null) vampireLevel(this, level.current);
 
         }
 
