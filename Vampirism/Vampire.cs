@@ -11,18 +11,28 @@ namespace Vampirism
     public class Vampire : MonoBehaviour
     {
         private Creature creature;
-        
+        private bool isPlayer { get => creature != null && creature.isPlayer; }
+
         private (int current, int max) level = (1, 50);
         private float xp;
         private int skillPoints;
-        private bool isPlayer { get => creature != null && creature.isPlayer; }
 
         private Dictionary<Ability, int> abilities;
+        private List<Coroutine> passiveRoutines;
 
         public static VampireCreatedEvent createdEvent;
         public static VampireLevelEvent levelEvent;
 
-        public Vampire Init(Creature newCreature, int startingLevel, float startingXP, int startingPoints)
+        /// <summary>
+        /// Only for use in extension Creature.Vampirize with AddComponent/GetComponent to serve as pseudo-constructor
+        /// </summary>
+        /// <param name="newCreature">Creature being made into a vampire</param>
+        /// <param name="startingLevel">The vampire's starting level</param>
+        /// <param name="startingXP">The vampire's starting xp</param>
+        /// <param name="startingPoints">The vampire's starting amount of skill points</param>
+        /// <param name="restrictedAbilities">A dictionary defining the available abilities and their levels. If null, the vampire will have all possible abilities at their base levels</param>
+        /// <returns></returns>
+        public Vampire Init(Creature newCreature, int startingLevel, float startingXP, int startingPoints, Dictionary<Ability, int> abilitySet)
         {
             creature = newCreature;
             level.current = startingLevel;
@@ -30,23 +40,36 @@ namespace Vampirism
             skillPoints = startingPoints;
 
             // Setup abilities for vampire
-            List<Ability> list = VampireManager.Instance.Abilities;
-            if (list == null) Debug.LogError("No list of abilities active");
-            else
+            abilities = new Dictionary<Ability, int>();
+            passiveRoutines = new List<Coroutine>();
+            Dictionary<Ability, int> abilityLevels = abilitySet ?? VampireManager.Instance.DefaultAbilities;
+            if (Utils.CheckError(() => abilityLevels == null, "Dictionary being used for ability levels is null (Vampire.Init)")) return this;
+            
+            foreach (KeyValuePair<Ability, int> abilityEntry in abilityLevels)
             {
-                for (int i = 0; i < list.Count; i++)
+                Ability ability = abilityEntry.Key;
+                if (Utils.CheckError(() => ability == null, "Ability in dictionary is null (Vampire.Init)")) continue;
+
+                abilities.Add(ability, abilityEntry.Value);
+
+                if (isPlayer)
                 {
-                    Ability ability = list[i];
-                    if (ability == null) continue;
+                    VampireSaveData saveData = VampireManager.Instance.SaveData;
+                    if (Utils.CheckError(() => saveData == null, "Save data in manager is null (Vampire.Init)")) continue;
 
-
+                    string typeName = ability.GetType().Name;
+                    if (saveData.abilityLevels.TryGetValue(typeName, out int value)) abilities[ability] = value;
                 }
+
+                ability.SetupAbility(this);
+                passiveRoutines.Add(StartCoroutine(ability.PassiveCoroutine()));
             }
 
             VampireCreatedEvent newVampire = createdEvent;
             if (newVampire != null)
                 newVampire(this);
 
+            WriteSave();
             return this;
         }
 
@@ -63,8 +86,8 @@ namespace Vampirism
                 required = GetXPRequirement(level.current + levelUpAmount);
             }
 
-            LevelUp(levelUpAmount);
-
+            if (levelUpAmount > 0) LevelUp(levelUpAmount);
+            else WriteSave();
 
             // LOCAL FUNCTION
             float GetXPRequirement(int levelAmount) => (50.0f * Mathf.Pow(level.current, 2.0f)) + (20.0f * level.current);
@@ -73,10 +96,32 @@ namespace Vampirism
         public void LevelUp(int amount = 1)
         {
             level.current += amount;
+            WriteSave();
 
             VampireLevelEvent vampireLevel = levelEvent;
             if (vampireLevel != null) vampireLevel(this, level.current);
 
+        }
+
+        public void WriteSave()
+        {
+            if (!isPlayer) return;
+
+            VampireSaveData saveData = new VampireSaveData()
+            {
+                isVampire = true,
+                level = level.current,
+                xp = this.xp,
+                skillPoints = this.skillPoints,
+                abilityLevels = new Dictionary<string, int>()
+            };
+
+            foreach (KeyValuePair<Ability, int> ability in abilities)
+            {
+                saveData.abilityLevels.Add(ability.Key.GetType().Name, ability.Value);
+            }
+
+            VampireManager.Instance.SaveData = saveData;
         }
 
         public delegate void VampireCreatedEvent(Vampire vampire);

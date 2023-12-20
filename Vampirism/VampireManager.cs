@@ -15,7 +15,32 @@ namespace Vampirism
     {
         private List<Ability> abilities;
         public List<Ability> Abilities { get => abilities; }
+        public Dictionary<Ability, int> DefaultAbilities
+        {
+            get
+            {
+                if (abilities == null) return null;
+
+                Dictionary<Ability, int> dict = new Dictionary<Ability, int>();
+                for (int i = 0; i < abilities.Count; i++)
+                {
+                    Ability ability = abilities[i];
+                    if (ability == null) continue;
+                    dict.Add(ability, ability.Statistics.BaseLevel);
+                }
+                return dict;
+            }
+        }
         private VampireSaveData saveData;
+        public VampireSaveData SaveData
+        {
+            get => saveData;
+            set
+            {
+                saveData = value;
+                WriteSave();
+            }
+        }
         private string folderAddress { get => Path.Combine(Application.streamingAssetsPath, "Mods", "Vampirism", "Data"); }
         private string saveAddress { get => Path.Combine(folderAddress, "VampireSaveData.json"); }
 
@@ -86,7 +111,7 @@ namespace Vampirism
                 abilityLevels = new Dictionary<string, int>()
             };
 
-            for (int i = 0;i < abilities.Count;i++)
+            for (int i = 0; i < abilities.Count; i++)
             {
                 Ability ability = abilities[i];
                 string abilityName = ability.GetType().Name;
@@ -96,7 +121,7 @@ namespace Vampirism
             WriteSave();
         }
 
-        public void WriteSave()
+        private void WriteSave()
         {
             string contents = JsonConvert.SerializeObject(saveData, Formatting.Indented);
             File.WriteAllText(saveAddress, contents);

@@ -52,17 +52,24 @@ namespace Vampirism
             existing = new Func<bool>(() => oldCondition() && newCondition());
         }
 
-        public static Vampire Vampirize(this Creature creature, int startingLevel = 1, float startingXP = 0.0f, int startingPoints = 0)
+        public static Vampire Vampirize(this Creature creature, int startingLevel = 1, float startingXP = 0.0f, int startingPoints = 0, Dictionary<Ability, int> abilitySet = null)
         {
             Vampire newVampire = creature.gameObject.GetComponent<Vampire>() ?? creature.gameObject.AddComponent<Vampire>();
-            newVampire.Init(creature, startingLevel, startingXP, startingPoints);
-            return newVampire;
+            return newVampire.Init(creature, startingLevel, startingXP, startingPoints, abilitySet);
         }
 
         public static void CureVampirism(this Creature creature)
         {
             Vampire vampire = creature.gameObject.GetComponent<Vampire>();
             if (vampire != null) MonoBehaviour.Destroy(vampire);
+            if (creature.isPlayer) VampireManager.Instance.SaveData = new VampireSaveData()
+            {
+                isVampire = false,
+                level = 0,
+                xp = 0,
+                skillPoints = 0,
+                abilityLevels = new Dictionary<string, int>()
+            };
         }
 
         public static bool IsVampire(this Creature creature, out Vampire vampire)
@@ -71,18 +78,5 @@ namespace Vampirism
             return vampire != null;
         }
 
-        public static void SetVampireEyes(this Creature creature, int level = 1)
-        {
-            (Color normal, Color min, Color max) irisColor = VampireConfig.Instance.IrisColor;
-            (Color min, Color max) scleraColor = VampireConfig.Instance.ScleraColor;
-
-            VampireProgression progression = VampireMaster.Instance.Progression;
-            float invLerp = Mathf.InverseLerp(1, progression.Level.max, progression.Level.current);
-            Color iris = level > 0 ? Color.Lerp(irisColor.min, irisColor.max, invLerp) : irisColor.normal;
-            Color sclera = level > 0 ? Color.Lerp(scleraColor.min, scleraColor.max, invLerp) : scleraColor.min;
-
-            creature.SetColor(iris, Creature.ColorModifier.EyesIris, true);
-            creature.SetColor(sclera, Creature.ColorModifier.EyesSclera, true);
-        }
     }
 }

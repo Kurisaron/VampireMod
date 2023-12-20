@@ -132,20 +132,17 @@
     <Compile Include="CustomPassRenderObjects.cs" />
     <Compile Include="BloodSpell.cs" />
     <Compile Include="DarknessSpell.cs" />
-    <Compile Include="Siphon.cs" />
     <Compile Include="Syringe.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Vampire.cs" />
     <Compile Include="VampireConfig.cs" />
     <Compile Include="VampireManager.cs" />
-    <Compile Include="VampireMaster.cs" />
     <Compile Include="VampireSaveData.cs" />
     <Compile Include="VampireScript.cs" />
     <Compile Include="VampireSound.cs" />
     <Compile Include="VampireSpell.cs" />
     <Compile Include="VampireSyringe.cs" />
-    <Compile Include="Vigor.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
