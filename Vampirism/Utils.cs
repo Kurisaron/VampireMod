@@ -17,7 +17,7 @@ namespace Vampirism
         /// <returns>Collection of new instances of classes deriving from T, stored as T</returns>
         public static IEnumerable<T> GetAllDerived<T>() where T : class
         {
-            return AppDomain.CurrentDomain.GetAssemblies().SelectMany(assembly => assembly.GetTypes()).Where(type => type.IsSubclassOf(typeof(T))).Select(type => Activator.CreateInstance(type) as T);
+            return AppDomain.CurrentDomain.GetAssemblies().SelectMany(assembly => assembly.GetTypes()).Where(type => type.IsSubclassOf(typeof(T)) && !type.IsAbstract).Select(type => Activator.CreateInstance(type) as T);
         }
         
         /// <summary>
@@ -40,10 +40,9 @@ namespace Vampirism
             return error;
         }
 
-        //============
-        // EXTENSIONS
-        //============
+        
 
+        #region Func<bool> Extensions
         public static void AddCondition(this Func<bool> existing, Func<bool> newCondition)
         {
             if (newCondition == null) return;
@@ -51,7 +50,9 @@ namespace Vampirism
             Func<bool> oldCondition = existing;
             existing = new Func<bool>(() => oldCondition() && newCondition());
         }
+        #endregion
 
+        #region Creature Extensions
         public static Vampire Vampirize(this Creature creature, int startingLevel = 1, float startingXP = 0.0f, int startingPoints = 0, Dictionary<Ability, int> abilitySet = null)
         {
             Vampire newVampire = creature.gameObject.GetComponent<Vampire>() ?? creature.gameObject.AddComponent<Vampire>();
@@ -77,6 +78,7 @@ namespace Vampirism
             vampire = creature.gameObject.GetComponent<Vampire>();
             return vampire != null;
         }
+        #endregion
 
     }
 }

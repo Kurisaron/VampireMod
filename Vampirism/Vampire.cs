@@ -50,19 +50,7 @@ namespace Vampirism
                 Ability ability = abilityEntry.Key;
                 if (Utils.CheckError(() => ability == null, "Ability in dictionary is null (Vampire.Init)")) continue;
 
-                abilities.Add(ability, abilityEntry.Value);
-
-                if (isPlayer)
-                {
-                    VampireSaveData saveData = VampireManager.Instance.SaveData;
-                    if (Utils.CheckError(() => saveData == null, "Save data in manager is null (Vampire.Init)")) continue;
-
-                    string typeName = ability.GetType().Name;
-                    if (saveData.abilityLevels.TryGetValue(typeName, out int value)) abilities[ability] = value;
-                }
-
-                ability.SetupAbility(this);
-                passiveRoutines.Add(StartCoroutine(ability.PassiveCoroutine()));
+                AddAbility(ability, abilityEntry.Value);
             }
 
             VampireCreatedEvent newVampire = createdEvent;
@@ -100,6 +88,27 @@ namespace Vampirism
 
             VampireLevelEvent vampireLevel = levelEvent;
             if (vampireLevel != null) vampireLevel(this, level.current);
+
+        }
+
+        public void AddAbility(Ability ability, int level = 0)
+        {
+            if (level <= 0) level = ability.BaseLevel;
+
+
+            abilities.Add(ability, level);
+
+            ability.SetupAbility(this);
+            passiveRoutines.Add(StartCoroutine(ability.PassiveCoroutine()));
+
+            if (isPlayer)
+            {
+                VampireSaveData saveData = VampireManager.Instance.SaveData;
+                if (Utils.CheckError(() => saveData == null, "Save data in manager is null (Vampire.Init)")) return;
+
+                string typeName = ability.GetType().Name;
+                if (saveData.abilityLevels.TryGetValue(typeName, out int value)) abilities[ability] = value;
+            }
 
         }
 

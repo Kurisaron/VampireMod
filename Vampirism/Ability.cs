@@ -9,38 +9,68 @@ using UnityEngine;
 
 namespace Vampirism
 {
-    
-    public abstract class Ability
+    public class AbilityManager
     {
-        public AbilityStats Statistics { get; private set; }
+        private List<AbilityTree> abilityTrees;
 
-        public Ability(AbilityStats statistics)
+        public AbilityManager()
         {
-            Statistics = statistics;
+            abilityTrees = new List<AbilityTree>();
+
         }
 
-        public abstract void SetupAbility(Vampire vampire);
-
-        public abstract IEnumerator PassiveCoroutine();
     }
 
-    public class AbilityStats
+    public abstract class AbilityTree
     {
         public string Name { get; private set; }
-        public string SkillTree { get; private set; }
-        public int Tier { get; private set; }
-        public int BaseLevel {  get; private set; }
+        public List<AbilityTier> Tiers { get; private set; }
+
+        public AbilityTree(string name)
+        {
+            Name = name;
+        }
+
+    }
+
+    [AttributeUsage(AttributeTargets.Class)]
+    public class AbilityTreeAttribute : Attribute
+    {
+        string tree;
+
+        public AbilityTreeAttribute(string tree)
+        {
+            this.tree = tree;
+        }
+    }
+
+    public abstract class AbilityTier
+    {
+        public Func<bool>[] UnlockConditions { get; private set; }
+
+        public AbilityTier(Func<bool>[] unlock = null)
+        {
+            UnlockConditions = unlock;
+        }
+    }
+
+    public abstract class Ability
+    {
+        public string Name { get; private set; }
+        //public AbilityTree Tree { get; private set; }
+        //public AbilityTier Tier { get; private set; }
+        public int BaseLevel { get; private set; }
         public int MaxLevel { get; private set; }
         private (string description, int unlockCost, Func<bool> unlockConditions)[] levelStats;
         public (string description, int unlockCost, Func<bool> unlockConditions) LevelStat(int level) => levelStats[level - 1]; // level is subtracted by 1 as index is zero-based
         private string[] tags;
         public string[] Tags { get => tags; }
-        
-        public AbilityStats(string name, string skillTree, int tier, int baseLevel, (string description, int unlockCost, Func<bool> unlockConditions)[] levelStats, string[] tags = null)
+
+        public Ability(string name, /*AbilityTree tree, AbilityTier tier,*/ int baseLevel, (string description, int unlockCost, Func<bool> unlockConditions)[] levelStats, string[] tags = null)
         {
-            Name = name; ;
-            SkillTree = skillTree;
-            Tier = tier;
+            Name = name;
+            /*Tree = tree;
+            Tier = tier;*/
 
             BaseLevel = baseLevel;
             this.levelStats = levelStats;
@@ -48,6 +78,10 @@ namespace Vampirism
             this.tags = tags;
 
         }
+
+        public abstract void SetupAbility(Vampire vampire);
+
+        public abstract IEnumerator PassiveCoroutine();
     }
 
 }

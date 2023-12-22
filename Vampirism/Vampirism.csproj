@@ -124,7 +124,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Ability.cs" />
-    <Compile Include="CompelHandler.cs" />
     <Compile Include="ControlGesture.cs" />
     <Compile Include="ControlStep.cs" />
     <Compile Include="CureSyringe.cs" />

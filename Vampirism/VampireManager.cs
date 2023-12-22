@@ -13,6 +13,7 @@ namespace Vampirism
 {
     public class VampireManager : VampireScript<VampireManager>
     {
+        private AbilityManager abilityManager;
         private List<Ability> abilities;
         public List<Ability> Abilities { get => abilities; }
         public Dictionary<Ability, int> DefaultAbilities
@@ -26,7 +27,7 @@ namespace Vampirism
                 {
                     Ability ability = abilities[i];
                     if (ability == null) continue;
-                    dict.Add(ability, ability.Statistics.BaseLevel);
+                    dict.Add(ability, ability.BaseLevel);
                 }
                 return dict;
             }
@@ -92,6 +93,7 @@ namespace Vampirism
         #region LOADING/SAVING
         private void LoadSave()
         {
+            abilityManager = new AbilityManager();
             abilities = Utils.GetAllDerived<Ability>().ToList();
             for (int i = 0; i < abilities.Count; i++)
             {
@@ -131,5 +133,7 @@ namespace Vampirism
         #region DELEGATE DEFINITIONS
         public delegate void PossessLoadEvent(Creature creature, Vampire vampire);
         #endregion
+
+
     }
 }
