@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using ThunderRoad;
@@ -21,36 +22,62 @@ namespace Vampirism
 
     }
 
-    public abstract class AbilityTree
+    public abstract class AbilityCategory
+    {
+        public Func<bool>[] UnlockConditions { get; private set; }
+
+        public AbilityCategory(Func<bool>[] unlock = null)
+        {
+            UnlockConditions = unlock;
+        }
+    }
+
+    public abstract class AbilityTree : AbilityCategory
     {
         public string Name { get; private set; }
         public List<AbilityTier> Tiers { get; private set; }
 
-        public AbilityTree(string name)
+        public AbilityTree(string name, Func<bool>[] unlock = null) : base(unlock)
         {
             Name = name;
         }
 
     }
 
-    [AttributeUsage(AttributeTargets.Class)]
-    public class AbilityTreeAttribute : Attribute
+    public class ExampleTree : AbilityTree
     {
-        string tree;
-
-        public AbilityTreeAttribute(string tree)
+        
+        public ExampleTree() : base(
+            "ExampleName",
+            new Func<bool>[]
+            {
+                () => true
+            })
         {
-            this.tree = tree;
+
         }
     }
 
-    public abstract class AbilityTier
+    public abstract class AbilityTier : AbilityCategory
     {
-        public Func<bool>[] UnlockConditions { get; private set; }
-
-        public AbilityTier(Func<bool>[] unlock = null)
+        public AbilityTree Tree { get; private set; }
+        public Type TreeType { get; private set; }
+        public AbilityTier(Type abilityTree, Func<bool>[] unlock = null) : base(unlock)
         {
-            UnlockConditions = unlock;
+            TreeType = abilityTree;
+        }
+    }
+
+    public class ExampleTier : AbilityTier
+    {
+        public ExampleTier() : base(
+            typeof(ExampleTree),
+            new Func<bool>[]
+            {
+                () => true
+            })
+        {
+
         }
     }
 

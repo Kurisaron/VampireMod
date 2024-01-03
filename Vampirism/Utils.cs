@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using ThunderRoad;
@@ -10,14 +11,20 @@ namespace Vampirism
 {
     public static class Utils
     {
+        public static Assembly[] GetAssemblies() => AppDomain.CurrentDomain.GetAssemblies();
+        public static IEnumerable<Type> GetAllTypes() => GetAssemblies().SelectMany(assembly => assembly.GetTypes());
+        public static IEnumerable<Type> GetAllTypes(Func<Type, bool> predicate) => GetAssemblies().SelectMany(assembly => assembly.GetTypes()).Where(predicate);
+
         /// <summary>
-        /// Collect IEnumerable of base class type T containing instances for each class type deriving from T. Use only for running virtual functions
+        /// Collect IEnumerable containing each class type deriving from T
         /// </summary>
         /// <typeparam name="T">Type of base class</typeparam>
-        /// <returns>Collection of new instances of classes deriving from T, stored as T</returns>
-        public static IEnumerable<T> GetAllDerived<T>() where T : class
+        /// <returns>Collection of Types deriving from T</returns>
+        public static IEnumerable<Type> GetAllDerived<T>() => GetAllDerived(typeof(T));
+
+        public static IEnumerable<Type> GetAllDerived(Type type)
         {
-            return AppDomain.CurrentDomain.GetAssemblies().SelectMany(assembly => assembly.GetTypes()).Where(type => type.IsSubclassOf(typeof(T)) && !type.IsAbstract).Select(type => Activator.CreateInstance(type) as T);
+            return GetAllTypes(check => check.IsSubclassOf(type));
         }
         
         /// <summary>

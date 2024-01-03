@@ -14,7 +14,6 @@ namespace Vampirism
     public class VampireManager : VampireScript<VampireManager>
     {
         private AbilityManager abilityManager;
-        private List<Ability> abilities;
         public List<Ability> Abilities { get => abilities; }
         public Dictionary<Ability, int> DefaultAbilities
         {
@@ -94,12 +93,6 @@ namespace Vampirism
         private void LoadSave()
         {
             abilityManager = new AbilityManager();
-            abilities = Utils.GetAllDerived<Ability>().ToList();
-            for (int i = 0; i < abilities.Count; i++)
-            {
-                string ability = abilities[i].GetType().Name;
-                Debug.Log(ability + " added to ability list");
-            }
 
             VampireSaveData tempData = File.Exists(saveAddress) ? JsonConvert.DeserializeObject<VampireSaveData>(File.ReadAllText(saveAddress)) : null;
             bool saveIsNotNull = tempData != null;
