@@ -35,7 +35,6 @@ namespace Vampirism
         {
             base.ScriptLoaded(modData);
 
-            VampireProgression.levelUpEvent += Eyes_LevelUpEvent;
         }
         #endregion
 
@@ -44,7 +43,6 @@ namespace Vampirism
         {
             if (Utils.CheckError(() => Player.currentCreature == null, "Current player creature is null")) return;
 
-            Player.currentCreature.SetVampireEyes(level);
         }
         #endregion
 

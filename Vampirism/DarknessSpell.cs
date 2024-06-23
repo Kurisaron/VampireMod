@@ -38,21 +38,10 @@ namespace Vampirism
 
 
         // FUNCTIONS
-        public override void Load(SpellCaster spellCaster, Level level)
+        public override void Load(SpellCaster spellCaster)
         {
-            base.Load(spellCaster, level);
+            base.Load(spellCaster);
 
-            switch (spellCaster.ragdollHand.side)
-            {
-                case Side.Left:
-                    DarknessSpellHandler.local.spellLeft = this;
-                    break;
-                case Side.Right:
-                    DarknessSpellHandler.local.spellRight = this;
-                    break;
-                default:
-                    break;
-            }
             veiledStrikeBoltData = Catalog.GetData<ItemData>(veiledStrikeBoltID);
         }
 
@@ -60,17 +49,6 @@ namespace Vampirism
         {
             base.Unload();
 
-            switch (spellCaster.ragdollHand.side)
-            {
-                case Side.Left:
-                    DarknessSpellHandler.local.spellLeft = null;
-                    break;
-                case Side.Right:
-                    DarknessSpellHandler.local.spellRight = null;
-                    break;
-                default:
-                    break;
-            }
         }
 
         /*

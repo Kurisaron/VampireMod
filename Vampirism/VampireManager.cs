@@ -13,24 +13,7 @@ namespace Vampirism
 {
     public class VampireManager : VampireScript<VampireManager>
     {
-        private AbilityManager abilityManager;
-        public List<Ability> Abilities { get => abilities; }
-        public Dictionary<Ability, int> DefaultAbilities
-        {
-            get
-            {
-                if (abilities == null) return null;
-
-                Dictionary<Ability, int> dict = new Dictionary<Ability, int>();
-                for (int i = 0; i < abilities.Count; i++)
-                {
-                    Ability ability = abilities[i];
-                    if (ability == null) continue;
-                    dict.Add(ability, ability.BaseLevel);
-                }
-                return dict;
-            }
-        }
+        
         private VampireSaveData saveData;
         public VampireSaveData SaveData
         {
@@ -69,6 +52,7 @@ namespace Vampirism
         #region EVENT SUBSCRIBERS
         private void Manager_PossessEvent(Creature creature, EventTime eventTime)
         {
+            // Only vampirize player creature if creature possession by player is complete
             if (eventTime == EventTime.OnStart) return;
             PossessLoad();
 
@@ -79,7 +63,7 @@ namespace Vampirism
                 
                 if (saveData.isVampire)
                 {
-                    playerVampire = creature.Vampirize(saveData.level, saveData.xp, saveData.skillPoints);
+                    playerVampire = creature.Vampirize(saveData.level, saveData.xp);
 
                 }
                 
@@ -92,8 +76,6 @@ namespace Vampirism
         #region LOADING/SAVING
         private void LoadSave()
         {
-            abilityManager = new AbilityManager();
-
             VampireSaveData tempData = File.Exists(saveAddress) ? JsonConvert.DeserializeObject<VampireSaveData>(File.ReadAllText(saveAddress)) : null;
             bool saveIsNotNull = tempData != null;
 
@@ -102,16 +84,7 @@ namespace Vampirism
                 isVampire = saveIsNotNull ? tempData.isVampire : false,
                 level = saveIsNotNull ? tempData.level : 0,
                 xp = saveIsNotNull ? tempData.xp : 0,
-                skillPoints = saveIsNotNull ? tempData.skillPoints : 0,
-                abilityLevels = new Dictionary<string, int>()
             };
-
-            for (int i = 0; i < abilities.Count; i++)
-            {
-                Ability ability = abilities[i];
-                string abilityName = ability.GetType().Name;
-                saveData.abilityLevels[abilityName] = saveIsNotNull && tempData.abilityLevels.ContainsKey(abilityName) ? tempData.abilityLevels[abilityName] : 0;
-            }
 
             WriteSave();
         }

@@ -60,10 +60,10 @@ namespace Vampirism
         #endregion
 
         #region Creature Extensions
-        public static Vampire Vampirize(this Creature creature, int startingLevel = 1, float startingXP = 0.0f, int startingPoints = 0, Dictionary<Ability, int> abilitySet = null)
+        public static Vampire Vampirize(this Creature creature, int startingLevel = 1, float startingXP = 0.0f)
         {
             Vampire newVampire = creature.gameObject.GetComponent<Vampire>() ?? creature.gameObject.AddComponent<Vampire>();
-            return newVampire.Init(creature, startingLevel, startingXP, startingPoints, abilitySet);
+            return newVampire.Init(creature, startingLevel, startingXP);
         }
 
         public static void CureVampirism(this Creature creature)
@@ -75,8 +75,6 @@ namespace Vampirism
                 isVampire = false,
                 level = 0,
                 xp = 0,
-                skillPoints = 0,
-                abilityLevels = new Dictionary<string, int>()
             };
         }
 

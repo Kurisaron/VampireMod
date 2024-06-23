@@ -19,23 +19,10 @@ namespace Vampirism
         // CORE FUNCTIONS
         //=====================================================
 
-        public override void Load(SpellCaster spellCaster, Level level)
+        public override void Load(SpellCaster spellCaster)
         {
-            base.Load(spellCaster, level);
+            base.Load(spellCaster);
 
-            manaConsumption = 0.0f;
-
-            switch (spellCaster.ragdollHand.side)
-            {
-                case Side.Left:
-                    BloodSpellHandler.local.spellLeft = this;
-                    break;
-                case Side.Right:
-                    BloodSpellHandler.local.spellRight = this;
-                    break;
-                default:
-                    break;
-            }
 
         }
 
@@ -43,31 +30,12 @@ namespace Vampirism
         {
             base.Unload();
 
-            switch (spellCaster.ragdollHand.side)
-            {
-                case Side.Left:
-                    BloodSpellHandler.local.spellLeft = null;
-                    break;
-                case Side.Right:
-                    BloodSpellHandler.local.spellRight = null;
-                    break;
-                default:
-                    break;
-            }
         }
 
         public override void Fire(bool active)
         {
             base.Fire(active);
 
-            if (active)
-            {
-                spellCaster.DisableSpellWheel(this);
-            }
-            else
-            {
-                spellCaster.AllowSpellWheel(this);
-            }
 
         }
 

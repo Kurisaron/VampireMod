@@ -10,11 +10,6 @@ using UnityEngine;
 
 namespace Vampirism
 {
-    public enum SpellType
-    {
-        Blood,
-        Darkness
-    }
     
     public class VampireSpell : SpellCastCharge
     {
@@ -22,10 +17,11 @@ namespace Vampirism
         public bool isCasting;
         
         // FUNCTIONS
-        public override void Load(SpellCaster spellCaster, Level level)
+        public override void Load(SpellCaster spellCaster)
         {
-            base.Load(spellCaster, level);
+            base.Load(spellCaster);
         }
+
 
         public override void Fire(bool active)
         {
