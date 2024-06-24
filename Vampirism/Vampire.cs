@@ -11,11 +11,11 @@ namespace Vampirism
     public class Vampire : MonoBehaviour
     {
         private Creature creature;
+        public Creature Creature { get => creature; }
         private bool isPlayer { get => creature != null && creature.isPlayer; }
 
         private (int current, int max) level = (1, 50);
         private float xp;
-        private int skillPoints;
 
         public static event VampireCreatedEvent createdEvent;
         public static event VampireLevelEvent levelEvent;
@@ -26,8 +26,6 @@ namespace Vampirism
         /// <param name="newCreature">Creature being made into a vampire</param>
         /// <param name="startingLevel">The vampire's starting level</param>
         /// <param name="startingXP">The vampire's starting xp</param>
-        /// <param name="startingPoints">The vampire's starting amount of skill points</param>
-        /// <param name="restrictedAbilities">A dictionary defining the available abilities and their levels. If null, the vampire will have all possible abilities at their base levels</param>
         /// <returns></returns>
         public Vampire Init(Creature newCreature, int startingLevel, float startingXP)
         {
@@ -77,12 +75,7 @@ namespace Vampirism
         {
             if (!isPlayer) return;
 
-            VampireSaveData saveData = new VampireSaveData()
-            {
-                isVampire = true,
-                level = level.current,
-                xp = this.xp,
-            };
+            VampireSaveData saveData = new VampireSaveData(level.current, xp);
 
             VampireManager.Instance.SaveData = saveData;
         }

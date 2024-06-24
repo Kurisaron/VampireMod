@@ -70,12 +70,7 @@ namespace Vampirism
         {
             Vampire vampire = creature.gameObject.GetComponent<Vampire>();
             if (vampire != null) MonoBehaviour.Destroy(vampire);
-            if (creature.isPlayer) VampireManager.Instance.SaveData = new VampireSaveData()
-            {
-                isVampire = false,
-                level = 0,
-                xp = 0,
-            };
+            if (creature.isPlayer) VampireManager.Instance.SaveData = new VampireSaveData();
         }
 
         public static bool IsVampire(this Creature creature, out Vampire vampire)

@@ -36,7 +36,7 @@ namespace Vampirism
 
             LoadSave();
 
-            EventManager.onPossess += Manager_PossessEvent;
+            EventManager.onPossess += VampireManager_OnPossess;
         }
 
         public override void ScriptUpdate()
@@ -50,26 +50,12 @@ namespace Vampirism
         #endregion
 
         #region EVENT SUBSCRIBERS
-        private void Manager_PossessEvent(Creature creature, EventTime eventTime)
+        public void VampireManager_OnPossess(Creature creature, EventTime eventTime)
         {
-            // Only vampirize player creature if creature possession by player is complete
-            if (eventTime == EventTime.OnStart) return;
-            PossessLoad();
+            if (eventTime == EventTime.OnStart || !creature.isPlayer)
+                return;
 
-
-            void PossessLoad()
-            {
-                Vampire playerVampire = null;
-                
-                if (saveData.isVampire)
-                {
-                    playerVampire = creature.Vampirize(saveData.level, saveData.xp);
-
-                }
-                
-                PossessLoadEvent possessEvent = possessLoadEvent;
-                if (possessEvent != null) possessEvent(creature, playerVampire);
-            }
+            // TO-DO: Vampirize player if they have unlocked the base skill
         }
         #endregion
 
@@ -77,20 +63,15 @@ namespace Vampirism
         private void LoadSave()
         {
             VampireSaveData tempData = File.Exists(saveAddress) ? JsonConvert.DeserializeObject<VampireSaveData>(File.ReadAllText(saveAddress)) : null;
-            bool saveIsNotNull = tempData != null;
 
-            saveData = new VampireSaveData()
-            {
-                isVampire = saveIsNotNull ? tempData.isVampire : false,
-                level = saveIsNotNull ? tempData.level : 0,
-                xp = saveIsNotNull ? tempData.xp : 0,
-            };
-
-            WriteSave();
+            saveData = tempData == null ? new VampireSaveData() : new VampireSaveData(tempData.level, tempData.xp);
         }
 
         private void WriteSave()
         {
+            if (saveData == null) 
+                saveData = new VampireSaveData();
+
             string contents = JsonConvert.SerializeObject(saveData, Formatting.Indented);
             File.WriteAllText(saveAddress, contents);
         }

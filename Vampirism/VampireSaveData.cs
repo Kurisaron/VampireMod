@@ -9,9 +9,27 @@ namespace Vampirism
 {
     public class VampireSaveData
     {
-        [JsonProperty(Required = Required.Always)]
-        public bool isVampire { get; set; }
         public int level { get; set; }
         public float xp { get; set; }
+
+        /// <summary>
+        /// Default constructor. Sets all member fields to default values
+        /// </summary>
+        public VampireSaveData()
+        {
+            level = 0;
+            xp = 0;
+        }
+
+        /// <summary>
+        /// Alternate constructor to set member fields to provided values
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="xp"></param>
+        public VampireSaveData(int level, float xp)
+        {
+            this.level = level;
+            this.xp = xp;
+        }
     }
 }

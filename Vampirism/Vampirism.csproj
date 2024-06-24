@@ -125,6 +125,7 @@
   <ItemGroup>
     <Compile Include="BloodSpell.cs" />
     <Compile Include="DarknessSpell.cs" />
+    <Compile Include="SkillSiphon.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Vampire.cs" />
