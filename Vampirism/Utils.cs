@@ -60,23 +60,19 @@ namespace Vampirism
         #endregion
 
         #region Creature Extensions
-        public static Vampire Vampirize(this Creature creature, int startingLevel = 1, float startingXP = 0.0f)
+        public static Vampire Vampirize(this Creature creature, int startingLevel = 1, float startingXP = 0.0f, Vampire sire = null)
         {
-            Vampire newVampire = creature.gameObject.GetComponent<Vampire>() ?? creature.gameObject.AddComponent<Vampire>();
-            return newVampire.Init(creature, startingLevel, startingXP);
+            return Vampire.Vampirize(creature, startingLevel, startingXP, sire);
         }
 
         public static void CureVampirism(this Creature creature)
         {
-            Vampire vampire = creature.gameObject.GetComponent<Vampire>();
-            if (vampire != null) MonoBehaviour.Destroy(vampire);
-            if (creature.isPlayer) VampireManager.Instance.SaveData = new VampireSaveData();
+            Vampire.Cure(creature);
         }
 
         public static bool IsVampire(this Creature creature, out Vampire vampire)
         {
-            vampire = creature.gameObject.GetComponent<Vampire>();
-            return vampire != null;
+            return Vampire.IsVampire(creature, out vampire);
         }
         #endregion
 

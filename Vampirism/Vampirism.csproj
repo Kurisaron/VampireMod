@@ -123,17 +123,17 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BloodSpell.cs" />
-    <Compile Include="DarknessSpell.cs" />
+    <Compile Include="SkillBloodFocus.cs" />
+    <Compile Include="SkillDrainingBolts.cs" />
+    <Compile Include="SkillSire.cs" />
     <Compile Include="SkillSiphon.cs" />
+    <Compile Include="SkillStride.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Vampire.cs" />
-    <Compile Include="VampireConfig.cs" />
     <Compile Include="VampireManager.cs" />
     <Compile Include="VampireSaveData.cs" />
     <Compile Include="VampireScript.cs" />
-    <Compile Include="VampireSpell.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
