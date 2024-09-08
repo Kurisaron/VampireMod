@@ -18,6 +18,12 @@ namespace Vampirism
 
         private Dictionary<string, SkillTreeData> skillTrees;
         public SkillTreeData VampireSkillTree { get => GetSkillTree("Vampire"); }
+
+        #region EVENT PUBLISHERS
+        public static event PossessLoadEvent possessLoadEvent;
+        public static event VampirismUnlockEvent unlockEvent;
+        #endregion
+
         #region OVERRIDES
         public override void ScriptLoaded(ModManager.ModData modData)
         {
@@ -26,8 +32,9 @@ namespace Vampirism
             LoadSkillTrees();
 
             EventManager.onPossess += new EventManager.PossessEvent(OnPossess);
-            Vampire.xpEarnedEvent += new Vampire.XPEarnedEvent(OnXPEarned);
-            Vampire.levelEvent += new Vampire.LevelEvent(OnLevelUp);
+            Vampire.sireEvent += new Vampire.SiredEvent(OnSired);
+            Vampire.powerGainedEvent += new Vampire.PowerGainedEvent(OnPowerGained);
+            Vampire.curedEvent += new Vampire.CuredEvent(OnCured);
         }
 
         public override void ScriptUpdate()
@@ -65,6 +72,14 @@ namespace Vampirism
             }
         }
 
+        private void RefreshSkillTrees()
+        {
+            foreach (SkillTreeData skillTree in skillTrees.Values)
+            {
+                skillTree.showInInfuser = saveData != null ? saveData.VampirismUnlocked : false;
+            }
+        }
+
         private SkillTreeData GetSkillTree(string ID)
         {
             bool contains = skillTrees.ContainsKey(ID);
@@ -88,34 +103,25 @@ namespace Vampirism
         #endregion
 
         #region VAMPIRISM UNLOCKING
-        /// <summary>
-        /// Set vampirism unlock to the desired state for the current save data
-        /// </summary>
-        /// <param name="unlock"></param>
-        /// <returns>True = toggle to desired state was performed and successful</returns>
-        public bool UnlockVampirism(bool unlock)
+        private void UnlockVampirism(bool unlock)
         {
             AffirmSaveData(nameof(UnlockVampirism));
 
             if (unlock == saveData.VampirismUnlocked)
             {
                 Debug.LogWarning("Did not perform unlock toggle. Wanted to " + (unlock ? "en" : "dis") + "able, but vampirism is already " + (unlock ? "" : "not ") + "unlocked");
-                return false;
+                return;
             }
 
             saveData.VampirismUnlocked = unlock;
+
+            RefreshSkillTrees();
 
             VampirismUnlockEvent vampirismUnlock = unlockEvent;
             if (vampirismUnlock != null)
                 vampirismUnlock(unlock);
 
-            return true;
         }
-        #endregion
-
-        #region EVENT PUBLISHERS
-        public static event PossessLoadEvent possessLoadEvent;
-        public static event VampirismUnlockEvent unlockEvent;
         #endregion
 
         #region EVENT SUBSCRIBERS
@@ -129,11 +135,9 @@ namespace Vampirism
             Vampire vampire = null;
             if (saveData.VampirismUnlocked)
             {
-                int level = Math.Max(saveData.Level, 1);
-                float xp = Mathf.Max(saveData.XP, 0.0f);
-                vampire = creature.Vampirize(level, xp);
-                SkillTreeData vampireTree = VampireSkillTree;
-                vampireTree.showInInfuser = true;
+                float power = Mathf.Max(saveData.Power, 1.0f);
+                vampire = creature.Vampirize(power);
+                RefreshSkillTrees();
             }
 
             PossessLoadEvent loadEvent = possessLoadEvent;
@@ -142,24 +146,30 @@ namespace Vampirism
 
         }
 
-        private void OnXPEarned(Vampire vampire)
+        private void OnSired(Vampire vampire)
         {
             if (vampire == null || vampire.Creature == null || !vampire.Creature.isPlayer)
                 return;
 
-            AffirmSaveData(nameof(OnXPEarned));
-
-            saveData.XP = vampire.XP;
+            UnlockVampirism(true);
         }
 
-        private void OnLevelUp(Vampire vampire)
+        private void OnPowerGained(Vampire vampire)
         {
             if (vampire == null || vampire.Creature == null || !vampire.Creature.isPlayer)
                 return;
 
-            AffirmSaveData(nameof(OnLevelUp));
+            AffirmSaveData(nameof(OnPowerGained));
 
-            saveData.Level = vampire.CurrentLevel;
+            saveData.Power = vampire.Power;
+        }
+
+        private void OnCured(Creature creature)
+        {
+            if (creature == null || !creature.isPlayer)
+                return;
+
+            UnlockVampirism(false);
         }
         #endregion
 

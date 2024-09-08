@@ -47,7 +47,34 @@ namespace Vampirism
             return error;
         }
 
-        
+        #region List<Collider> Extensions
+        public static void SortByDistance(this List<Collider> colliders, Vector3 position, bool shortestFirst = true)
+        {
+            
+            try
+            {
+                colliders.Sort((a, b) =>
+                {
+                    if ((a == null && b == null) || a == b) return 0;
+                    if (a == null) return shortestFirst ? -1 : 1;
+                    if (b == null) return shortestFirst ? 1 : -1;
+
+                    float aDistance = Vector3.Distance(a.transform.position, position);
+                    float bDistance = Vector3.Distance(b.transform.position, position);
+
+                    if (aDistance == bDistance) return 0;
+                    if (aDistance < bDistance) return shortestFirst ? -1 : 1;
+                    return shortestFirst ? 1 : -1;
+
+                });
+            }
+            catch (Exception e)
+            {
+                string exceptionType = e.GetType().Name;
+                Debug.LogWarning(exceptionType + " occured during collider sort");
+            }
+        }
+        #endregion
 
         #region Func<bool> Extensions
         public static void AddCondition(this Func<bool> existing, Func<bool> newCondition)
@@ -60,9 +87,9 @@ namespace Vampirism
         #endregion
 
         #region Creature Extensions
-        public static Vampire Vampirize(this Creature creature, int startingLevel = 1, float startingXP = 0.0f, Vampire sire = null)
+        public static Vampire Vampirize(this Creature creature, float startingPower = 1.0f, Vampire sire = null)
         {
-            return Vampire.Vampirize(creature, startingLevel, startingXP, sire);
+            return Vampire.Vampirize(creature, startingPower, sire);
         }
 
         public static void CureVampirism(this Creature creature)
@@ -74,6 +101,16 @@ namespace Vampirism
         {
             return Vampire.IsVampire(creature, out vampire);
         }
+
+        public static Vampire AffirmVampirism(this Creature creature)
+        {
+            Vampire vampire = null;
+            if (!creature.IsVampire(out vampire))
+                vampire = creature.Vampirize();
+
+            return vampire;
+        }
+
         #endregion
 
     }

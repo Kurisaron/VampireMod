@@ -123,8 +123,31 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ModuleBloodFocus.cs" />
+    <Compile Include="ModuleCompel.cs" />
+    <Compile Include="ModuleContinuity.cs" />
+    <Compile Include="ModuleDrainBubble.cs" />
+    <Compile Include="ModuleDreadAura.cs" />
+    <Compile Include="ModuleMementoMori.cs" />
+    <Compile Include="ModuleRavenousBrood.cs" />
+    <Compile Include="ModuleRedHand.cs" />
+    <Compile Include="ModuleShockwave.cs" />
+    <Compile Include="ModuleSiphon.cs" />
+    <Compile Include="ModuleSire.cs" />
+    <Compile Include="ModuleSpellDisciple.cs" />
+    <Compile Include="ModuleStride.cs" />
     <Compile Include="SkillBloodFocus.cs" />
-    <Compile Include="SkillDrainingBolts.cs" />
+    <Compile Include="SkillCompel.cs" />
+    <Compile Include="SkillContinuity.cs" />
+    <Compile Include="SkillDrainBolts.cs" />
+    <Compile Include="SkillDrainBubble.cs" />
+    <Compile Include="SkillDreadAura.cs" />
+    <Compile Include="SkillMementoMori.cs" />
+    <Compile Include="SkillRavenousBrood.cs" />
+    <Compile Include="SkillRedHand.cs" />
+    <Compile Include="SkillShockwave.cs" />
+    <Compile Include="SkillSpellDisciple.cs" />
+    <Compile Include="VampireModule.cs" />
     <Compile Include="SkillSire.cs" />
     <Compile Include="SkillSiphon.cs" />
     <Compile Include="SkillStride.cs" />

@@ -35,38 +35,24 @@ namespace Vampirism
         }
 
         [JsonProperty]
-        private int level;
+        private float power;
         [JsonIgnore]
-        public int Level
+        public float Power
         {
-            get => level;
+            get => power;
             set
             {
-                level = value;
+                power = value;
                 WriteSave();
             }
         }
 
-        [JsonProperty]
-        private float xp;
-        [JsonIgnore]
-        public float XP
-        {
-            get => xp;
-            set
-            {
-                xp = value;
-                WriteSave();
-            }
-        }
 
-        public VampireSaveData(string id = "", bool unlocked = false, int level = 0, float xp = 0.0f)
+        public VampireSaveData(string id = "", bool unlocked = false, float power = 0)
         {
             this.id = id;
             vampirismUnlocked = unlocked;
-            this.level = level;
-            this.xp = xp;
-
+            this.power = power;
 
         }
 
@@ -88,6 +74,8 @@ namespace Vampirism
             bool saveExists = File.Exists(saveAddress);
             Debug.Log("[" + nameof(TryLoadSave) + "] Modded save does " + (saveExists ? "" : "not ") + "exist for save: " + playerSave.ID);
             vampireSave = saveExists ? JsonConvert.DeserializeObject<VampireSaveData>(File.ReadAllText(saveAddress)) : new VampireSaveData(playerSave.ID);
+            if (saveExists) vampireSave.id = playerSave.ID;
+
             return vampireSave != null;
         }
 

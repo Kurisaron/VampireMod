@@ -5,12 +5,23 @@ using System.Text;
 using System.Threading.Tasks;
 using ThunderRoad;
 using UnityEngine;
+using Vampirism.Skill;
 
 namespace Vampirism
 {
     public class Vampire : MonoBehaviour
     {
         
+        private float power;
+        public float Power
+        {
+            get => power;
+            private set
+            {
+                power = value;
+            }
+        }
+
         public Creature Creature { get => gameObject.GetComponent<Creature>(); }
         private bool isPlayer
         {
@@ -21,27 +32,6 @@ namespace Vampirism
             }
         }
 
-
-
-        private (int current, int max) level = (1, 50);
-        public int CurrentLevel { get => level.current; }
-        public int MaxLevel { get => level.max; }
-        public float LevelScale {
-            get
-            {
-                if (level.current <= 0)
-                    return 0.0f;
-
-                return (float)level.current / (float)level.max;
-            }
-        }
-
-
-        private float xp = 0.0f;
-        public float XP { get => xp; }
-
-
-
         private Vampire sire;
         private List<Vampire> spawn = new List<Vampire>();
         public Vampire Sire
@@ -51,7 +41,7 @@ namespace Vampirism
             {
                 if (sire != null)
                 {
-                    curedEvent -= new VampireCuredEvent(OnSireCured);
+                    curedEvent -= new CuredEvent(OnSireCured);
                     Creature sireCreature = sire.Creature;
                     if (sireCreature != null)
                         sireCreature.OnKillEvent -= new Creature.KillEvent(OnSireKilled);
@@ -64,7 +54,8 @@ namespace Vampirism
                 {
                     sire = value;
 
-                    curedEvent += new VampireCuredEvent(OnSireCured);
+                    curedEvent -= new CuredEvent(OnSireCured);
+                    curedEvent += new CuredEvent(OnSireCured);
                     Creature sireCreature = sire.Creature;
                     if (sireCreature != null)
                         sireCreature.OnKillEvent += new Creature.KillEvent(OnSireKilled);
@@ -87,49 +78,35 @@ namespace Vampirism
                     spawn = new List<Vampire>();
 
                 (int lower, int upper) limit = (1, 10);
-                int maxForLevel = CurrentLevel <= 0 ? 0 : Mathf.FloorToInt(Mathf.LerpUnclamped(limit.lower, limit.upper, LevelScale));
+                int maxForLevel = Power <= 0 ? 0 : Mathf.FloorToInt(Mathf.LerpUnclamped(limit.lower, limit.upper, Power / 123456789.0f));
                 return (spawn.Count, maxForLevel);
             }
         }
 
 
-
         public (Color iris, Color sclera) HumanColors { get; private set; }
-        public (Color iris, Color sclera) VampireColors
-        {
-            get
-            {
-                Color iris = Color.Lerp(new Color(0.5f, 0.0f, 0.0f, 1.0f), Color.red, LevelScale);
-                Color sclera = Color.Lerp(HumanColors.sclera, Color.black, LevelScale);
-                return (iris, sclera);
-            }
-        }
-
+        
 
         // Event broadcasted when a vampire is created
         public static event SiredEvent sireEvent;
-        // Event broadcasted when a vampire earns xp
-        public static event XPEarnedEvent xpEarnedEvent;
-        // Event broadcasted when a vampire levels up
-        public static event LevelEvent levelEvent;
+        // Event broadcasted when a vampire gains power
+        public static event PowerGainedEvent powerGainedEvent;
         // Event broadcasted when a vampire is cured
         public static event CuredEvent curedEvent;
 
-        public static Vampire Vampirize(Creature creature, int startingLevel = 1, float startingXP = 0.0f, Vampire sire = null)
+        public static Vampire Vampirize(Creature creature, float startingPower = 1.0f, Vampire sire = null)
         {
             // attempt to find a Vampire script attached to the given creature in case it is already present
             // add an instance of the Vampire script if it is not already present
             Vampire newVampire = creature.gameObject.GetComponent<Vampire>() ?? creature.gameObject.AddComponent<Vampire>();
-            newVampire.level.current = Math.Max(newVampire.level.current, startingLevel);
-            newVampire.xp = Mathf.Max(newVampire.xp, startingXP);
+            newVampire.Power = Math.Max(newVampire.Power, startingPower);
             newVampire.spawn = newVampire.spawn ?? new List<Vampire>();
             newVampire.Sire = sire;
 
             Color iris = creature.GetColor(Creature.ColorModifier.EyesIris);
             Color sclera = creature.GetColor(Creature.ColorModifier.EyesSclera);
             newVampire.HumanColors = (iris, sclera);
-            newVampire.RefreshEyes(newVampire);
-            levelEvent += new LevelEvent(newVampire.RefreshEyes);
+            newVampire.RefreshEyes();
 
             SiredEvent vampireEvent = sireEvent;
             if (vampireEvent != null)
@@ -145,7 +122,6 @@ namespace Vampirism
             {
                 creature.SetColor(vampire.HumanColors.iris, Creature.ColorModifier.EyesIris);
                 creature.SetColor(vampire.HumanColors.sclera, Creature.ColorModifier.EyesSclera);
-                levelEvent -= new LevelEvent(vampire.RefreshEyes);
 
                 CuredEvent vampireCured = curedEvent;
                 if (vampireCured != null)
@@ -153,7 +129,6 @@ namespace Vampirism
 
                 MonoBehaviour.Destroy(vampire);
             }
-
         }
 
         public static bool IsVampire(Creature creature, out Vampire vampire)
@@ -163,38 +138,58 @@ namespace Vampirism
         }
 
         /// <summary>
-        /// Add xp to this vampire's current pool. Contributes to leveling up vampire powers
+        /// Adds power to the vampire's pool. The higher the power, the more potent their vampiric abilities
         /// </summary>
-        /// <param name="amount">Amount of xp to provide the vampire</param>
-        public void EarnXP(float amount)
+        /// <param name="amount">Amount of power to provide the vampire</param>
+        public void GainPower(float amount)
         {
-            xp += amount;
+            power += amount;
 
-            float required = GetXPRequirement(level.current);
-            int levelUpAmount = 0;
-            while (xp >= required) 
-            {
-                xp -= required;
-                levelUpAmount += 1;
-                required = GetXPRequirement(level.current + levelUpAmount);
-            }
+            RefreshEyes();
 
-            if (levelUpAmount > 0) LevelUp(levelUpAmount);
+            PowerGainedEvent powerEvent = powerGainedEvent;
+            if (powerEvent != null) powerEvent(this);
 
-            XPEarnedEvent vampireXPEvent = xpEarnedEvent;
-            if (vampireXPEvent != null) vampireXPEvent(this);
-
-            // LOCAL FUNCTION
-            float GetXPRequirement(int levelAmount) => (50.0f * Mathf.Pow(level.current, 2.0f)) + (20.0f * level.current);
         }
 
-        public void LevelUp(int amount = 1)
+        public T AddModule<T>() where T : VampireModule
         {
-            level.current += amount;
+            return gameObject.GetComponent<T>() ?? gameObject.AddComponent<T>();
 
-            LevelEvent vampireLevel = levelEvent;
-            if (vampireLevel != null) vampireLevel(this);
+        }
 
+        public T GetModule<T>() where T : VampireModule
+        {
+            return gameObject.GetComponent<T>();
+        }
+
+        public void RemoveModule<T>() where T : VampireModule
+        {
+            T module = gameObject.GetComponent<T>();
+            if (module != null)
+            {
+                Destroy(module);
+            }
+            else
+                Debug.LogWarning("Vampire module " + module.GetType().Name + " not found on vampire, cannot remove");
+        }
+
+        /// <summary>
+        /// Perform an action for each spawn
+        /// </summary>
+        /// <param name="action">Action delegate to perform on each vampire spawn</param>
+        public void PerformSpawnAction(Action<Vampire> action)
+        {
+            if (action == null || spawn == null || spawn.Count == 0)
+                return;
+
+            for (int i = 0; i < spawn.Count; i++)
+            {
+                Vampire vampire = spawn[i];
+                if (vampire == null) continue;
+
+                action(vampire);
+            }
         }
 
         private void OnSireCured(Creature sire)
@@ -216,21 +211,18 @@ namespace Vampirism
                 Sire = null;
         }
 
-        private void RefreshEyes(Vampire vampire)
+        private void RefreshEyes()
         {
-            if (vampire == null || this != vampire) return;
-
-            Creature creature = vampire.Creature;
+            Creature creature = Creature;
             if (creature == null) return;
 
-            (Color iris, Color sclera) EyeColors = CurrentLevel <= 0 ? HumanColors : VampireColors;
+            (Color iris, Color sclera) EyeColors = (Color.red, HumanColors.sclera);
             creature.SetColor(EyeColors.iris, Creature.ColorModifier.EyesIris);
             creature.SetColor(EyeColors.sclera, Creature.ColorModifier.EyesIris);
         }
 
         public delegate void SiredEvent(Vampire vampire);
-        public delegate void XPEarnedEvent(Vampire vampire);
-        public delegate void LevelEvent(Vampire vampire);
+        public delegate void PowerGainedEvent(Vampire vampire);
         public delegate void CuredEvent(Creature creature);
     }
 }

@@ -4,8 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ThunderRoad;
+using UnityEngine;
 
-namespace Vampirism
+namespace Vampirism.Skill
 {
     public class SkillBloodFocus : SkillData
     {
@@ -13,42 +14,19 @@ namespace Vampirism
         {
             base.OnSkillLoaded(skillData, creature);
 
-            Vampire vampire = null;
-            if (!creature.IsVampire(out vampire))
-                vampire = creature.Vampirize();
+            Vampire vampire = creature.AffirmVampirism();
 
-            if (vampire != null)
-            {
-                SkillSiphon.SiphonEvent siphonEvent = GetFocusDrainEvent(vampire);
-                SkillSiphon.siphonEvent -= siphonEvent;
-                SkillSiphon.siphonEvent += siphonEvent;
-            }
+            vampire.gameObject.AddComponent<ModuleBloodFocus>();
         }
 
         public override void OnSkillUnloaded(SkillData skillData, Creature creature)
         {
             base.OnSkillUnloaded(skillData, creature);
 
-            if (creature == null)
-                return;
+            ModuleBloodFocus focusModule = creature.gameObject.GetComponent<ModuleBloodFocus>();
+            if (focusModule == null) return;
 
-            Vampire vampire = null;
-            if (creature.IsVampire(out vampire))
-            {
-                SkillSiphon.SiphonEvent siphonEvent = GetFocusDrainEvent(vampire);
-                SkillSiphon.siphonEvent -= siphonEvent;
-            }
-        }
-
-        private SkillSiphon.SiphonEvent GetFocusDrainEvent(Vampire vampire)
-        {
-            return new SkillSiphon.SiphonEvent((source, target, damage) =>
-            {
-                if (vampire == null || source == null || target == null)
-                    return;
-
-                source.Creature?.mana?.RegenFocus(damage);
-            });
+            MonoBehaviour.Destroy(focusModule);
         }
     }
 }

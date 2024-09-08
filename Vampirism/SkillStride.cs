@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using ThunderRoad;
 using UnityEngine;
 
-namespace Vampirism
+namespace Vampirism.Skill
 {
     public class SkillStride : SkillData
     {
@@ -14,56 +14,22 @@ namespace Vampirism
         {
             base.OnSkillLoaded(skillData, creature);
 
-            Vampire vampire = null;
-            if (!creature.IsVampire(out vampire))
-                vampire = creature.Vampirize();
+            Vampire vampire = creature.AffirmVampirism();
 
-            if (vampire != null)
-            {
-                SetStrideModifier(vampire);
-                Vampire.LevelEvent strideEvent = GetStrideEvent(vampire);
-                Vampire.levelEvent -= strideEvent;
-                Vampire.levelEvent += strideEvent;
-            }
+            vampire.gameObject.AddComponent<ModuleStride>();
         }
 
         public override void OnSkillUnloaded(SkillData skillData, Creature creature)
         {
             base.OnSkillUnloaded(skillData, creature);
 
-            if (creature == null)
-                return;
+            ModuleStride strideModule = creature.gameObject.GetComponent<ModuleStride>();
+            if (strideModule == null) return;
 
-            Vampire vampire = null;
-            if (creature.IsVampire(out vampire))
-            {
-                creature.currentLocomotion.RemoveSpeedModifier(this);
-                Vampire.LevelEvent strideEvent = GetStrideEvent(vampire);
-                Vampire.levelEvent -= strideEvent;
-            }
+            MonoBehaviour.Destroy(strideModule);
+
         }
 
-        private Vampire.LevelEvent GetStrideEvent(Vampire vampire)
-        {
-            return new Vampire.LevelEvent(check =>
-            {
-                if (vampire == null || check == null || check != vampire)
-                    return;
-
-                SetStrideModifier(vampire);
-            });
-        }
-
-        private void SetStrideModifier(Vampire target)
-        {
-            if (target == null) return;
-
-            Creature creature = target.Creature;
-            if (creature == null) return;
-
-            float runSpeedMultiplier = Mathf.LerpUnclamped(1, 3, target.LevelScale);
-            float jumpForceMultiplier = Mathf.LerpUnclamped(1, 4, target.LevelScale);
-            creature.currentLocomotion.SetSpeedModifier(this, 1, 1, 1, runSpeedMultiplier, jumpForceMultiplier, 1);
-        }
+        
     }
 }

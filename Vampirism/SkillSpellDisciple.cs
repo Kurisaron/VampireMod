@@ -1,42 +1,38 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ThunderRoad;
-using ThunderRoad.Skill;
 using UnityEngine;
 
 namespace Vampirism.Skill
 {
-    public class SkillSire : SkillData
+    public class SkillSpellDisciple : SkillData
     {
-
+        public string spellID;
+        
         public override void OnSkillLoaded(SkillData skillData, Creature creature)
         {
             base.OnSkillLoaded(skillData, creature);
 
-            if (creature == null)
-                return;
-
             Vampire vampire = creature.AffirmVampirism();
 
-            vampire.gameObject.AddComponent<ModuleSire>();
-
+            ModuleSpellDisciple discipleModule = vampire.gameObject.GetComponent<ModuleSpellDisciple>() ?? vampire.gameObject.GetComponent<ModuleSpellDisciple>();
+            discipleModule.AddSpell(spellID);
         }
 
         public override void OnSkillUnloaded(SkillData skillData, Creature creature)
         {
             base.OnSkillUnloaded(skillData, creature);
 
-            ModuleSire sireModule = creature.gameObject.GetComponent<ModuleSire>();
-            if (sireModule == null) return;
+            ModuleSpellDisciple discipleModule = creature.gameObject.GetComponent<ModuleSpellDisciple>();
+            if (discipleModule == null) return;
 
-            MonoBehaviour.Destroy(sireModule);
+            discipleModule.RemoveSpell(spellID);
+            MonoBehaviour.Destroy(discipleModule);
 
         }
-
 
     }
 }
