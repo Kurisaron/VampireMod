@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using ThunderRoad;
 using UnityEngine;
-using static ThunderRoad.TutorialArea;
 
 namespace Vampirism.Skill
 {
