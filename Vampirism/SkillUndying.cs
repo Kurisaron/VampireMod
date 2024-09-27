@@ -9,11 +9,15 @@ using UnityEngine;
 namespace Vampirism.Skill
 {
     [Serializable]
-    public class SkillMend : SkillData
+    public class SkillUndying : SkillData
     {
-        public float damageToHealer = 5f;
-        public float healingToTarget = 10f;
-        public float mendInterval = 0.1f;
+        public Vector2 regenPowerScale = new Vector2(0.01f, 0.05f);
+        public float powerAtRegenMax = 23456.0f;
+        public bool clampRegen = false;
+        public float regenInterval = 2.0f;
+        public Vector2 poolScale = new Vector2(0.0f, 100.0f);
+        public float powerAtPoolMax = 23456.0f;
+        public bool clampPool = false;
         
         public override void OnSkillLoaded(SkillData skillData, Creature creature)
         {
@@ -21,8 +25,8 @@ namespace Vampirism.Skill
 
             Vampire vampire = creature.AffirmVampirism();
 
-            ModuleMend.skill = this;
-            vampire.AddModule<ModuleMend>();
+            ModuleUndying.skill = this;
+            vampire.AddModule<ModuleUndying>();
         }
 
         public override void OnSkillUnloaded(SkillData skillData, Creature creature)
@@ -31,16 +35,15 @@ namespace Vampirism.Skill
 
             if (creature.IsVampire(out Vampire vampire))
             {
-                vampire.RemoveModule<ModuleMend>();
+                vampire.RemoveModule<ModuleUndying>();
             }
             else
             {
-                ModuleMend mendModule = creature.gameObject.GetComponent<ModuleMend>();
-                if (mendModule == null) return;
+                ModuleUndying undyingModule = creature.gameObject.GetComponent<ModuleUndying>();
+                if (undyingModule == null) return;
 
-                MonoBehaviour.Destroy(mendModule);
+                MonoBehaviour.Destroy(undyingModule);
             }
-
         }
     }
 }

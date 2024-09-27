@@ -1,16 +1,18 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ThunderRoad;
+using UnityEngine;
 
 namespace Vampirism.Skill
 {
-    public class ModuleSire : VampireModule
+    public class ModuleTemporalSiphon : VampireModule
     {
-        public static SkillSire skill;
-
+        public static SkillTemporalSiphon skill;
+        
         protected override void Awake()
         {
             base.Awake();
@@ -28,10 +30,12 @@ namespace Vampirism.Skill
 
         private void OnSiphon(Vampire source, Creature target, float damage)
         {
-            if (Vampire == null || source == null || target == null || source != Vampire || target.isKilled || target.IsVampire(out _) || source.SpawnCount >= skill.GetSireAmount(source)) return;
+            if (source == null || Vampire == null || target == null || skill == null || source != Vampire) return;
 
-            target.Vampirize(source.Power / 2.0f, source);
+            if (target.IsVampire(out Vampire vampire) && vampire.Sire == Vampire)
+                return;
+
+            target.Inflict(skill.statusData, this, skill.duration, skill.slowMult);
         }
-
     }
 }

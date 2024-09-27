@@ -8,8 +8,14 @@ using UnityEngine;
 
 namespace Vampirism.Skill
 {
+    [Serializable]
     public class SkillDreadAura : SkillData
     {
+        public float auraRange = 10.0f;
+        public float auraInterval = 0.1f;
+        public float auraPowerScaleMax = 12345.0f;
+        public float basePanicChance = 50.0f;
+        public float maxPanicChance = 100.0f;
 
         public override void OnSkillLoaded(SkillData skillData, Creature creature)
         {
@@ -17,6 +23,7 @@ namespace Vampirism.Skill
 
             Vampire vampire = creature.AffirmVampirism();
 
+            ModuleDreadAura.skill = this;
             vampire.AddModule<ModuleDreadAura>();
         }
 

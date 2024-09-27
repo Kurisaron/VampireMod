@@ -18,6 +18,9 @@ namespace Vampirism.Skill
         bool sfxPlaying = false;
         EffectInstance sfxInstance = null;
 
+        public bool IsSiphoning { get; private set; }
+
+
         public static event SiphonEvent siphonEvent;
 
         protected override void Awake()
@@ -39,7 +42,12 @@ namespace Vampirism.Skill
             while (Vampire != null && Vampire.Creature != null)
             {
                 SiphonUpdate();
-                yield return new WaitForSeconds(skill.siphonInterval);
+                bool hasTemporalSiphon = Vampire.Creature.HasSkill("TemporalSiphon");
+                float siphonInterval = skill.siphonInterval;
+                if (hasTemporalSiphon)
+                    yield return new WaitForSecondsRealtime(siphonInterval);
+                else
+                    yield return new WaitForSeconds(siphonInterval);
             }
 
             if (sfxInstance != null)
@@ -49,10 +57,11 @@ namespace Vampirism.Skill
         private void SiphonUpdate()
         {
             Creature target = FindTarget();
-            if (target != null)
+            IsSiphoning = target != null;
+            if (IsSiphoning)
                 Siphon(Vampire, target);
 
-            SiphonSFX(target != null);
+            SiphonSFX(IsSiphoning);
         }
 
         public static void Siphon(
@@ -86,8 +95,8 @@ namespace Vampirism.Skill
 
         private static float GetDamage(Vampire source, Creature target)
         {
-            float powerScale = source.Power / 12345.0f;
-            float percentage = Mathf.LerpUnclamped(0.05f, 0.25f, powerScale);
+            float powerScale = source.Power / skill.powerAtSiphonPowerMax;
+            float percentage = skill.clampSiphonPower ? Mathf.Lerp(skill.siphonPowerScale.x, skill.siphonPowerScale.y, powerScale) : Mathf.LerpUnclamped(skill.siphonPowerScale.x, skill.siphonPowerScale.y, powerScale);
             return target.maxHealth * percentage;
         }
 
@@ -96,7 +105,7 @@ namespace Vampirism.Skill
             Vector3 sourcePosition = Vampire.Creature.jaw.position;
 
             // Find all colliders within siphon range that belong to a creature that is not the siphoner
-            List<Collider> targetColliders = Physics.OverlapSphere(sourcePosition, Vampire.Creature.mouthRelay.mouthRadius * 5.0f).ToList().FindAll(collider =>
+            List<Collider> targetColliders = Physics.OverlapSphere(sourcePosition, Vampire.Creature.mouthRelay.mouthRadius * skill.siphonMouthRangeMult).ToList().FindAll(collider =>
             {
                 Creature creature = collider?.gameObject?.GetComponentInParent<RagdollPart>()?.ragdoll?.creature;
 

@@ -8,9 +8,11 @@ using UnityEngine;
 
 namespace Vampirism.Skill
 {
+    [Serializable]
     public class SkillShockwave : SkillData
     {
         public float shockwaveRange = 10.0f;
+        public float shockwavePowerMult = 1000.0f;
 
         public override void OnSkillLoaded(SkillData skillData, Creature creature)
         {

@@ -124,12 +124,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ModuleBloodFocus.cs" />
+    <Compile Include="ModuleCatervaCruentis.cs" />
     <Compile Include="ModuleCompel.cs" />
     <Compile Include="ModuleContinuity.cs" />
+    <Compile Include="ModuleDrainBolts.cs" />
     <Compile Include="ModuleDrainBubble.cs" />
     <Compile Include="ModuleDreadAura.cs" />
+    <Compile Include="ModuleEmpoweredSpell.cs" />
+    <Compile Include="ModuleFortitude.cs" />
     <Compile Include="ModuleMementoMori.cs" />
     <Compile Include="ModuleMend.cs" />
+    <Compile Include="ModuleMight.cs" />
+    <Compile Include="ModuleProfanedSun.cs" />
     <Compile Include="ModuleRavenousBrood.cs" />
     <Compile Include="ModuleRedHand.cs" />
     <Compile Include="ModuleShockwave.cs" />
@@ -137,18 +143,28 @@
     <Compile Include="ModuleSire.cs" />
     <Compile Include="ModuleSpellDisciple.cs" />
     <Compile Include="ModuleStride.cs" />
+    <Compile Include="ModuleTemporalSiphon.cs" />
+    <Compile Include="ModuleUndying.cs" />
     <Compile Include="SkillBloodFocus.cs" />
+    <Compile Include="SkillBloodForGold.cs" />
+    <Compile Include="SkillCatervaCruentis.cs" />
     <Compile Include="SkillCompel.cs" />
     <Compile Include="SkillContinuity.cs" />
     <Compile Include="SkillDrainBolts.cs" />
     <Compile Include="SkillDrainBubble.cs" />
     <Compile Include="SkillDreadAura.cs" />
+    <Compile Include="SkillEmpoweredSpell.cs" />
+    <Compile Include="SkillFortitude.cs" />
     <Compile Include="SkillMementoMori.cs" />
     <Compile Include="SkillMend.cs" />
+    <Compile Include="SkillMight.cs" />
+    <Compile Include="SkillProfanedSun.cs" />
     <Compile Include="SkillRavenousBrood.cs" />
     <Compile Include="SkillRedHand.cs" />
     <Compile Include="SkillShockwave.cs" />
     <Compile Include="SkillSpellDisciple.cs" />
+    <Compile Include="SkillTemporalSiphon.cs" />
+    <Compile Include="SkillUndying.cs" />
     <Compile Include="VampireModule.cs" />
     <Compile Include="SkillSire.cs" />
     <Compile Include="SkillSiphon.cs" />

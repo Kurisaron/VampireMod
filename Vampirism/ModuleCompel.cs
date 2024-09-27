@@ -40,9 +40,11 @@ namespace Vampirism.Skill
             // Compel all of the module vampire's spawn to attack the creature hit by the module vampire's attack
             Vampire.PerformSpawnAction(spawn =>
             {
-                if (spawn?.Creature?.brain == null) return;
+                Brain brain = spawn?.Creature?.brain;
+                if (brain == null) return;
 
-                spawn.Creature.brain.currentTarget = creature;
+                brain.currentTarget = creature;
+                brain.ResetBrain();
             });
         }
 

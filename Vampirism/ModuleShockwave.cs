@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ThunderRoad;
-using UnityEngine
+using UnityEngine;
 
 namespace Vampirism.Skill
 {
@@ -44,7 +44,9 @@ namespace Vampirism.Skill
             {
                 if (target.IsVampire(out Vampire vampireTarget) && (vampireTarget.Sire == Vampire.Sire || vampireTarget.Sire == Vampire || vampireTarget == Vampire.Sire)) continue;
 
-                target.AddExplosionForce(hit.impactVelocity.magnitude * 10.0f, hit.contactPoint, skill.shockwaveRange, 1.0f, ForceMode.Impulse);
+                Vector3 staggerDirection = (target.transform.position - hit.contactPoint).normalized;
+                target.ForceStagger(staggerDirection, BrainModuleHitReaction.PushBehaviour.Effect.StaggerFull);
+                target.AddExplosionForce(hit.impactVelocity.magnitude * skill.shockwavePowerMult, hit.contactPoint, skill.shockwaveRange, 1.0f, ForceMode.Impulse);
             }
         }
     }

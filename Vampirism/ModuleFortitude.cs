@@ -8,15 +8,15 @@ using UnityEngine;
 
 namespace Vampirism.Skill
 {
-    public class ModuleStride : VampireModule
+    public class ModuleFortitude : VampireModule
     {
-        public static SkillStride skill;
+        public static SkillFortitude skill;
         
         protected override void Awake()
         {
             base.Awake();
 
-            SetStrideModifier();
+            SetFortitudeModifier();
 
             Vampire.sireEvent -= new Vampire.SiredEvent(OnPowerGained);
             Vampire.sireEvent += new Vampire.SiredEvent(OnPowerGained);
@@ -39,17 +39,19 @@ namespace Vampirism.Skill
             if (check == null || Vampire == null || check != Vampire)
                 return;
 
-            SetStrideModifier();
+            SetFortitudeModifier();
         }
 
-        private void SetStrideModifier()
+        private void SetFortitudeModifier()
         {
-            Creature creature = Vampire?.Creature;
+            Creature creature = Vampire.Creature;
             if (creature == null) return;
 
-            float runSpeedMultiplier = skill.clampRunSpeed ? Mathf.Lerp(skill.runSpeedMultScale.x, skill.runSpeedMultScale.y, Vampire.Power / skill.powerAtRunSpeedMax) : Mathf.LerpUnclamped(skill.runSpeedMultScale.x, skill.runSpeedMultScale.y, Vampire.Power / skill.powerAtRunSpeedMax);
-            float jumpForceMultiplier = skill.clampJumpPower ? Mathf.Lerp(skill.jumpPowerMultScale.x, skill.jumpPowerMultScale.y, Vampire.Power / skill.powerAtJumpPowerMax) : Mathf.LerpUnclamped(skill.jumpPowerMultScale.x, skill.jumpPowerMultScale.y, Vampire.Power / skill.powerAtJumpPowerMax);
-            creature.currentLocomotion.SetSpeedModifier(this, 1, 1, 1, runSpeedMultiplier, jumpForceMultiplier, 1);
+            float levelScale = Vampire.Power / skill.powerAtResistanceMax;
+            float resistMultiplier = skill.clampResistance ? Mathf.Lerp(skill.resistancePowerScale.x, skill.resistancePowerScale.y, levelScale) : Mathf.LerpUnclamped(skill.resistancePowerScale.x, skill.resistancePowerScale.y, levelScale);
+            if (resistMultiplier < 0) resistMultiplier = 0;
+
+            creature.SetDamageMultiplier(this, resistMultiplier);
         }
     }
 }

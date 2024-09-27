@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -47,7 +48,6 @@ namespace Vampirism
                         sireCreature.OnKillEvent -= new Creature.KillEvent(OnSireKilled);
 
                     sire.spawn.Remove(this);
-                    Creature.OnKillEvent -= new Creature.KillEvent(OnKilled);
                 }
 
                 if (value != null)
@@ -63,23 +63,27 @@ namespace Vampirism
                     int sireID = sire.Creature.factionId;
                     int spawnID = Creature.factionId;
                     if (sireID != spawnID)
+                    {
                         Creature.SetFaction(sireID);
+                        if (!Creature.isPlayer)
+                        {
+                            Creature.brain.Load(Creature.brain.instance.id);
+                            Creature.brain.canDamage = true;
+                        }
+                    }
 
                     sire.spawn.Add(this);
-                    Creature.OnKillEvent += new Creature.KillEvent(OnKilled);
                 }
             }
         }
-        public (int current, int max) SpawnCount
+        public int SpawnCount
         {
             get
             {
                 if (spawn == null)
                     spawn = new List<Vampire>();
 
-                (int lower, int upper) limit = (1, 10);
-                int maxForLevel = Power <= 0 ? 0 : Mathf.FloorToInt(Mathf.LerpUnclamped(limit.lower, limit.upper, Power / 123456789.0f));
-                return (spawn.Count, maxForLevel);
+                return spawn.Count;
             }
         }
 
@@ -91,6 +95,8 @@ namespace Vampirism
         public static event SiredEvent sireEvent;
         // Event broadcasted when a vampire gains power
         public static event PowerGainedEvent powerGainedEvent;
+        // Event broadcasted when a vampire ability module is added
+        public static event ModuleEvent moduleAddedEvent;
         // Event broadcasted when a vampire is cured
         public static event CuredEvent curedEvent;
 
@@ -107,6 +113,7 @@ namespace Vampirism
             Color sclera = creature.GetColor(Creature.ColorModifier.EyesSclera);
             newVampire.HumanColors = (iris, sclera);
             newVampire.RefreshEyes();
+            newVampire.SetKillEvent(true);
 
             SiredEvent vampireEvent = sireEvent;
             if (vampireEvent != null)
@@ -120,6 +127,8 @@ namespace Vampirism
         {
             if (creature.IsVampire(out Vampire vampire))
             {
+                vampire.SetKillEvent(false);
+                
                 creature.SetColor(vampire.HumanColors.iris, Creature.ColorModifier.EyesIris);
                 creature.SetColor(vampire.HumanColors.sclera, Creature.ColorModifier.EyesSclera);
 
@@ -154,8 +163,13 @@ namespace Vampirism
 
         public T AddModule<T>() where T : VampireModule
         {
-            return gameObject.GetComponent<T>() ?? gameObject.AddComponent<T>();
+            T module = gameObject.GetComponent<T>() ?? gameObject.AddComponent<T>();
 
+            ModuleEvent addedEvent = moduleAddedEvent;
+            if (module != null && addedEvent != null)
+                addedEvent(this, module);
+
+            return module;
         }
 
         public T GetModule<T>() where T : VampireModule
@@ -163,11 +177,19 @@ namespace Vampirism
             return gameObject.GetComponent<T>();
         }
 
-        public void RemoveModule<T>() where T : VampireModule
+        public VampireModule[] GetModules()
+        {
+            return gameObject.GetComponents<VampireModule>();
+        }
+
+        public void RemoveModule<T>(Action<T> preDestroyAction = null) where T : VampireModule
         {
             T module = gameObject.GetComponent<T>();
             if (module != null)
             {
+                if (preDestroyAction != null)
+                    preDestroyAction(module);
+                
                 Destroy(module);
             }
             else
@@ -205,10 +227,44 @@ namespace Vampirism
             Creature.Kill();
         }
 
+        private void SetKillEvent(bool active)
+        {
+            Creature creature = Creature;
+            if (creature == null) return;
+
+            creature.OnKillEvent -= new Creature.KillEvent(OnKilled);
+            if (active)
+                creature.OnKillEvent += new Creature.KillEvent(OnKilled);
+        }
+
         private void OnKilled(CollisionInstance collisionInstance, EventTime eventTime)
+        {
+            StartCoroutine(DestroyVampirismOnDeath());
+        }
+
+        // Coroutine used to delay destruction of vampirism script and modules until all on death events for them have occured
+        private IEnumerator DestroyVampirismOnDeath()
         {
             if (sire != null)
                 Sire = null;
+
+            VampireModule[] modules = GetModules();
+            if (modules != null && modules.Length > 0)
+            {
+                int count = modules.Length;
+                for (int i = 0; i < count; i++)
+                {
+                    VampireModule module = modules[i];
+                    if (module == null) continue;
+
+                    yield return new WaitUntil(() => module.DestructionReady);
+
+                    Destroy(module);
+                }
+            }
+
+            SetKillEvent(false);
+            Destroy(this);
         }
 
         private void RefreshEyes()
@@ -223,6 +279,7 @@ namespace Vampirism
 
         public delegate void SiredEvent(Vampire vampire);
         public delegate void PowerGainedEvent(Vampire vampire);
+        public delegate void ModuleEvent(Vampire vampire, VampireModule module);
         public delegate void CuredEvent(Creature creature);
     }
 }

@@ -12,6 +12,8 @@ namespace Vampirism.Skill
     public class ModuleDreadAura : VampireModule
     {
         private Coroutine coroutine;
+
+        public static SkillDreadAura skill;
         
         protected override void Awake()
         {
@@ -32,7 +34,7 @@ namespace Vampirism.Skill
             while (true)
             {
                 DreadUpdate();
-                yield return new WaitForSeconds(0.1f);
+                yield return new WaitForSeconds(skill.auraInterval);
             }
         }
 
@@ -44,17 +46,23 @@ namespace Vampirism.Skill
             List<Creature> targets = Creature.allActive.FindAll(creature => creature != null && creature != Vampire.Creature && (!creature.IsVampire(out Vampire spawn) || spawn.Sire != Vampire));
             if (targets == null || targets.Count == 0) return;
 
-            List<Creature> nearTargets = targets.FindAll(creature => Vector3.Distance(creature.transform.position, Vampire.Creature.transform.position) < 10.0f);
+            List<Creature> nearTargets = targets.FindAll(creature => Vector3.Distance(creature.transform.position, Vampire.Creature.transform.position) < skill.auraRange);
             if (nearTargets == null || nearTargets.Count == 0) return;
 
             foreach (Creature target in nearTargets)
             {
+                if (target == null || target.isKilled)
+                    continue;
+                
                 BrainModuleFear fearModule = target?.brain?.instance?.GetModule<BrainModuleFear>();
                 if (fearModule == null) continue;
 
+                // Do not attempt to cause panic if it is already present
+                if (fearModule.isCowering) continue;
+
                 // Creatures within the range only have a chance to be made to panic
                 float percentage = UnityEngine.Random.Range(0.0f, 100.0f); // Generate the percentage value to query against the chance percentage of fear
-                float chanceToPanic = 50.0f + Mathf.Lerp(0.0f, 50.0f, Mathf.InverseLerp(0.0f, 12345.0f, Vampire.Power)); // Generate the chance percentage for dread aura to cause panic, based on the power level of the module vampire
+                float chanceToPanic = skill.basePanicChance + Mathf.Lerp(0.0f, skill.maxPanicChance - skill.basePanicChance, Mathf.InverseLerp(0.0f, skill.auraPowerScaleMax, Vampire.Power)); // Generate the chance percentage for dread aura to cause panic, based on the power level of the module vampire
                 if (percentage <= chanceToPanic)
                     fearModule.Panic();
             }

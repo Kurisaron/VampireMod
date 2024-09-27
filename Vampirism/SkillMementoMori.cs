@@ -8,15 +8,18 @@ using UnityEngine;
 
 namespace Vampirism.Skill
 {
+    [Serializable]
     public class SkillMementoMori : SkillData
     {
-        
+        public float mementoMoriRange = 10.0f;
+
         public override void OnSkillLoaded(SkillData skillData, Creature creature)
         {
             base.OnSkillLoaded(skillData, creature);
 
             Vampire vampire = creature.AffirmVampirism();
 
+            ModuleMementoMori.skill = this;
             vampire.AddModule<ModuleMementoMori>();
         }
 

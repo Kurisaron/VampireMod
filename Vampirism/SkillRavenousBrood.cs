@@ -8,6 +8,7 @@ using UnityEngine;
 
 namespace Vampirism.Skill
 {
+    [Serializable]
     public class SkillRavenousBrood : SkillData
     {
 

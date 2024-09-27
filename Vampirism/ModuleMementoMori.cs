@@ -10,6 +10,8 @@ namespace Vampirism.Skill
 {
     public class ModuleMementoMori : VampireModule
     {
+        public static SkillMementoMori skill;
+        
         private bool isCursed = false;
         public bool IsCursed
         {
@@ -54,12 +56,19 @@ namespace Vampirism.Skill
 
         private void OnDeath(CollisionInstance collisionInstance, EventTime eventTime)
         {
-            Creature sourceCreature = Vampire?.Creature;
-            if (sourceCreature == null) return;
+            DestructionReady = false;
 
-            List<Creature> targets = Creature.allActive.FindAll(check => check != null && !check.pooled && check != sourceCreature && Vector3.Distance(check.transform.position, sourceCreature.transform.position) <= 5.0f);
+            Creature sourceCreature = Vampire?.Creature;
+            if (sourceCreature == null)
+            {
+                goto DeathEnd2;
+            }
+
+            List<Creature> targets = Creature.allActive.FindAll(check => check != null && !check.pooled && check != sourceCreature && Vector3.Distance(check.transform.position, sourceCreature.transform.position) <= skill.mementoMoriRange);
             foreach (Creature target in targets)
             {
+                if (target == null || target.isKilled || target == sourceCreature) continue;
+
                 // Vampires that are within the same sire line as the module vampire are not affected by this ability
                 if (target.IsVampire(out Vampire vampireTarget) && (vampireTarget.Sire == Vampire.Sire || vampireTarget.Sire == Vampire || vampireTarget == Vampire.Sire)) continue;
                 
@@ -70,13 +79,24 @@ namespace Vampirism.Skill
             }
 
             Ragdoll ragdoll = sourceCreature.ragdoll;
-            if (ragdoll == null) return;
+            if (ragdoll == null)
+            {
+                goto DeathEnd1;
+            }
 
             foreach (RagdollPart part in ragdoll.parts)
             {
                 if (part.sliceAllowed)
                     ragdoll.TrySlice(part);
             }
+            goto DeathEnd1;
+
+        DeathEnd1:
+            sourceCreature.OnKillEvent -= new Creature.KillEvent(OnDeath);
+            goto DeathEnd2;
+
+        DeathEnd2:
+            DestructionReady = true;
         }
     }
 }

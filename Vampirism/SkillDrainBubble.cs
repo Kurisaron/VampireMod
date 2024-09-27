@@ -11,6 +11,7 @@ using UnityEngine.Events;
 
 namespace Vampirism.Skill
 {
+    [Serializable]
     public class SkillDrainBubble : SpellSkillData
     {
         public override void OnSkillLoaded(SkillData skillData, Creature creature)

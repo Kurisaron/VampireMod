@@ -8,6 +8,7 @@ using UnityEngine;
 
 namespace Vampirism.Skill
 {
+    [Serializable]
     public class SkillSpellDisciple : SkillData
     {
         public string spellID;

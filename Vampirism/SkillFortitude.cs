@@ -9,20 +9,20 @@ using UnityEngine;
 namespace Vampirism.Skill
 {
     [Serializable]
-    public class SkillMend : SkillData
+    public class SkillFortitude : SkillData
     {
-        public float damageToHealer = 5f;
-        public float healingToTarget = 10f;
-        public float mendInterval = 0.1f;
-        
+        public Vector2 resistancePowerScale = new Vector2(0.75f, 0.2f);
+        public float powerAtResistanceMax = 12345.0f;
+        public bool clampResistance = false;
+
         public override void OnSkillLoaded(SkillData skillData, Creature creature)
         {
             base.OnSkillLoaded(skillData, creature);
 
             Vampire vampire = creature.AffirmVampirism();
 
-            ModuleMend.skill = this;
-            vampire.AddModule<ModuleMend>();
+            ModuleFortitude.skill = this;
+            vampire.AddModule<ModuleFortitude>();
         }
 
         public override void OnSkillUnloaded(SkillData skillData, Creature creature)
@@ -31,16 +31,15 @@ namespace Vampirism.Skill
 
             if (creature.IsVampire(out Vampire vampire))
             {
-                vampire.RemoveModule<ModuleMend>();
+                vampire.RemoveModule<ModuleFortitude>();
             }
             else
             {
-                ModuleMend mendModule = creature.gameObject.GetComponent<ModuleMend>();
-                if (mendModule == null) return;
+                ModuleFortitude fortitudeModule = creature.gameObject.GetComponent<ModuleFortitude>();
+                if (fortitudeModule == null) return;
 
-                MonoBehaviour.Destroy(mendModule);
+                MonoBehaviour.Destroy(fortitudeModule);
             }
-
         }
     }
 }

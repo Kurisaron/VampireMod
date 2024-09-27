@@ -8,6 +8,7 @@ using UnityEngine;
 
 namespace Vampirism.Skill
 {
+    [Serializable]
     public class SkillRedHand : SkillData
     {
         public override void OnSkillLoaded(SkillData skillData, Creature creature)
