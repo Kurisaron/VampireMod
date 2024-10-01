@@ -20,6 +20,7 @@ namespace Vampirism.Skill
             Vampire.sireEvent += new Vampire.SiredEvent(OnSire);
         }
 
+
         protected override void OnDestroy()
         {
             Vampire.sireEvent -= new Vampire.SiredEvent(OnSire);

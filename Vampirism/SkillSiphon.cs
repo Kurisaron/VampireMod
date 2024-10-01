@@ -10,7 +10,7 @@ using UnityEngine;
 namespace Vampirism.Skill
 {
     [Serializable]
-    public class SkillSiphon : SkillData
+    public class SkillSiphon : VampireSkill
     {
         // JSON fields
         public float siphonInterval = 0.1f;
@@ -29,26 +29,7 @@ namespace Vampirism.Skill
             siphonEffectData = Catalog.GetData<EffectData>(siphonEffectID);
         }
 
-        public override void OnSkillLoaded(SkillData skillData, Creature creature)
-        {
-            base.OnSkillLoaded(skillData, creature);
-
-            Vampire vampire = creature.AffirmVampirism();
-
-            ModuleSiphon.skill = this;
-
-            vampire.gameObject.AddComponent<ModuleSiphon>();
-        }
-
-        public override void OnSkillUnloaded(SkillData skillData, Creature creature)
-        {
-            base.OnSkillUnloaded(skillData, creature);
-
-            ModuleSiphon siphonModule = creature.gameObject.GetComponent<ModuleSiphon>();
-            if (siphonModule == null) return;
-
-            MonoBehaviour.Destroy(siphonModule);
-        }
+        public override VampireModule CreateModule() => CreateModule<ModuleSiphon>();
 
     }
 }

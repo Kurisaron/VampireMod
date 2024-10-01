@@ -10,33 +10,35 @@ namespace Vampirism.Skill
 {
     public class ModuleFortitude : VampireModule
     {
-        public static SkillFortitude skill;
-        
-        protected override void Awake()
+        public override string GetSkillID() => "Fortitude";
+
+        public override void ModuleLoaded(Vampire vampire)
         {
-            base.Awake();
+            base.ModuleLoaded(vampire);
 
             SetFortitudeModifier();
 
-            Vampire.sireEvent -= new Vampire.SiredEvent(OnPowerGained);
-            Vampire.sireEvent += new Vampire.SiredEvent(OnPowerGained);
-            Vampire.powerGainedEvent -= new Vampire.PowerGainedEvent(OnPowerGained);
-            Vampire.powerGainedEvent += new Vampire.PowerGainedEvent(OnPowerGained);
+            VampireEvents.sireEvent -= new Vampire.VampireEvent(OnPowerGained);
+            VampireEvents.sireEvent += new Vampire.VampireEvent(OnPowerGained);
+            moduleVampire.power.powerGainedEvent -= new Vampire.VampireEvent(OnPowerGained);
+            moduleVampire.power.powerGainedEvent += new Vampire.VampireEvent(OnPowerGained);
+
         }
 
-        protected override void OnDestroy()
+        public override void ModuleUnloaded()
         {
-            Vampire.Creature?.currentLocomotion?.RemoveSpeedModifier(this);
+            moduleVampire?.creature?.RemoveDamageMultiplier(this);
 
-            Vampire.sireEvent -= new Vampire.SiredEvent(OnPowerGained);
-            Vampire.powerGainedEvent -= new Vampire.PowerGainedEvent(OnPowerGained);
+            VampireEvents.sireEvent -= new Vampire.VampireEvent(OnPowerGained);
+            if (moduleVampire?.power != null)
+                moduleVampire.power.powerGainedEvent -= new Vampire.VampireEvent(OnPowerGained);
 
-            base.OnDestroy();
+            base.ModuleUnloaded();
         }
 
         private void OnPowerGained(Vampire check)
         {
-            if (check == null || Vampire == null || check != Vampire)
+            if (check == null || moduleVampire == null || check != moduleVampire)
                 return;
 
             SetFortitudeModifier();
@@ -44,11 +46,12 @@ namespace Vampirism.Skill
 
         private void SetFortitudeModifier()
         {
-            Creature creature = Vampire.Creature;
-            if (creature == null) return;
+            Creature creature = moduleVampire?.creature;
+            SkillFortitude fortitudeSkill = GetSkill<SkillFortitude>();
+            if (creature == null || fortitudeSkill == null) return;
 
-            float levelScale = Vampire.Power / skill.powerAtResistanceMax;
-            float resistMultiplier = skill.clampResistance ? Mathf.Lerp(skill.resistancePowerScale.x, skill.resistancePowerScale.y, levelScale) : Mathf.LerpUnclamped(skill.resistancePowerScale.x, skill.resistancePowerScale.y, levelScale);
+            float levelScale = moduleVampire.power.PowerLevel / fortitudeSkill.powerAtResistanceMax;
+            float resistMultiplier = fortitudeSkill.clampResistance ? Mathf.Lerp(fortitudeSkill.resistancePowerScale.x, fortitudeSkill.resistancePowerScale.y, levelScale) : Mathf.LerpUnclamped(fortitudeSkill.resistancePowerScale.x, fortitudeSkill.resistancePowerScale.y, levelScale);
             if (resistMultiplier < 0) resistMultiplier = 0;
 
             creature.SetDamageMultiplier(this, resistMultiplier);

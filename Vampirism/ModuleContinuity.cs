@@ -10,27 +10,32 @@ namespace Vampirism.Skill
 {
     public class ModuleContinuity : VampireModule
     {
+        public override string GetSkillID() => "Continuity";
 
-        protected override void Awake()
+        public override void ModuleLoaded(Vampire vampire)
         {
-            base.Awake();
+            base.ModuleLoaded(vampire);
 
-            ModuleSiphon.siphonEvent -= new ModuleSiphon.SiphonEvent(OnSiphon);
-            ModuleSiphon.siphonEvent += new ModuleSiphon.SiphonEvent(OnSiphon);
+            VampireEvents.siphonEvent -= new VampireEvents.SiphonEvent(OnSiphon);
+            VampireEvents.siphonEvent += new VampireEvents.SiphonEvent(OnSiphon);
         }
 
-        protected override void OnDestroy()
+        public override void ModuleUnloaded()
         {
-            ModuleSiphon.siphonEvent -= new ModuleSiphon.SiphonEvent(OnSiphon);
-
-            base.OnDestroy();
+            VampireEvents.siphonEvent -= new VampireEvents.SiphonEvent(OnSiphon);
+            
+            base.ModuleUnloaded();
         }
 
         private void OnSiphon(Vampire source, Creature target, float damage)
         {
-            if (source == null || Vampire == null || source != Vampire) return;
+            if (source == null || moduleVampire == null || source != moduleVampire) return;
 
-            Vampire.PerformSpawnAction(spawn => ModuleSiphon.Siphon(spawn, target, damage, false));
+            if (moduleVampire.skill.GetModule("Siphon") is ModuleSiphon siphonModule)
+            {
+                moduleVampire.sireline.PerformSpawnAction(spawn => siphonModule?.Siphon(spawn, target, damage, false));
+            }
+            
         }
     }
 }

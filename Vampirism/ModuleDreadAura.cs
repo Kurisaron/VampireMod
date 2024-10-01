@@ -11,42 +11,37 @@ namespace Vampirism.Skill
 {
     public class ModuleDreadAura : VampireModule
     {
-        private Coroutine coroutine;
+        public override string GetSkillID() => "DreadAura";
 
-        public static SkillDreadAura skill;
-        
-        protected override void Awake()
+        public override void ModuleLoaded(Vampire vampire)
         {
-            base.Awake();
-
-            coroutine = StartCoroutine(DreadRoutine());
+            base.ModuleLoaded(vampire);
         }
 
-        protected override void OnDestroy()
+        public override void ModuleUnloaded()
         {
-            StopCoroutine(coroutine);
-            
-            base.OnDestroy();
+            base.ModuleUnloaded();
         }
 
-        private IEnumerator DreadRoutine()
+        public override IEnumerator ModulePassive()
         {
-            while (true)
+            SkillDreadAura dreadAuraSkill = GetSkill<SkillDreadAura>();
+            while (moduleVampire != null && dreadAuraSkill != null)
             {
-                DreadUpdate();
-                yield return new WaitForSeconds(skill.auraInterval);
+                DreadUpdate(dreadAuraSkill);
+                yield return new WaitForSeconds(dreadAuraSkill.auraInterval);
             }
         }
 
-        private void DreadUpdate()
+        private void DreadUpdate(SkillDreadAura dreadAuraSkill)
         {
-            if (Vampire?.Creature == null) return;
+            if (moduleVampire?.creature == null) return;
 
             // A creature can be a target for the dread aura if creature is not null, creature is not the module vampire, either the creature is not a vampire or it is not the spawn of the module vampire
-            List<Creature> targets = Creature.allActive.FindAll(creature => creature != null && creature != Vampire.Creature && (!creature.IsVampire(out Vampire spawn) || spawn.Sire != Vampire));
+            List<Creature> targets = Creature.allActive.FindAll(creature => creature != null && creature != moduleVampire.creature && (!creature.IsVampire(out Vampire spawn) || spawn.sireline.Sire != moduleVampire));
             if (targets == null || targets.Count == 0) return;
 
-            List<Creature> nearTargets = targets.FindAll(creature => Vector3.Distance(creature.transform.position, Vampire.Creature.transform.position) < skill.auraRange);
+            List<Creature> nearTargets = targets.FindAll(creature => Vector3.Distance(creature.transform.position, moduleVampire.creature.transform.position) < dreadAuraSkill.auraRange);
             if (nearTargets == null || nearTargets.Count == 0) return;
 
             foreach (Creature target in nearTargets)
@@ -62,7 +57,7 @@ namespace Vampirism.Skill
 
                 // Creatures within the range only have a chance to be made to panic
                 float percentage = UnityEngine.Random.Range(0.0f, 100.0f); // Generate the percentage value to query against the chance percentage of fear
-                float chanceToPanic = skill.basePanicChance + Mathf.Lerp(0.0f, skill.maxPanicChance - skill.basePanicChance, Mathf.InverseLerp(0.0f, skill.auraPowerScaleMax, Vampire.Power)); // Generate the chance percentage for dread aura to cause panic, based on the power level of the module vampire
+                float chanceToPanic = dreadAuraSkill.basePanicChance + Mathf.Lerp(0.0f, dreadAuraSkill.maxPanicChance - dreadAuraSkill.basePanicChance, Mathf.InverseLerp(0.0f, dreadAuraSkill.auraPowerScaleMax, moduleVampire.power.PowerLevel)); // Generate the chance percentage for dread aura to cause panic, based on the power level of the module vampire
                 if (percentage <= chanceToPanic)
                     fearModule.Panic();
             }

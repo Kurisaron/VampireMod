@@ -9,25 +9,9 @@ using UnityEngine;
 namespace Vampirism.Skill
 {
     [Serializable]
-    public class SkillContinuity : SkillData
+    public class SkillContinuity : VampireSkill
     {
-        public override void OnSkillLoaded(SkillData skillData, Creature creature)
-        {
-            base.OnSkillLoaded(skillData, creature);
+        public override VampireModule CreateModule() => CreateModule<ModuleContinuity>();
 
-            Vampire vampire = creature.AffirmVampirism();
-
-            vampire.gameObject.AddComponent<ModuleContinuity>();
-        }
-
-        public override void OnSkillUnloaded(SkillData skillData, Creature creature)
-        {
-            base.OnSkillUnloaded(skillData, creature);
-
-            ModuleContinuity continuityModule = creature.gameObject.GetComponent<ModuleContinuity>();
-            if (continuityModule == null) return;
-
-            MonoBehaviour.Destroy(continuityModule);
-        }
     }
 }

@@ -10,17 +10,19 @@ using UnityEngine;
 namespace Vampirism.Skill
 {
     [Serializable]
-    public class SkillBloodForGold : SkillData
+    public class SkillBloodForGold : VampireSkill
     {
-        public string potionItemId;
+        public string potionItemId = "PotionVampireBlood";
         private ItemData potionItemData;
         
-        public string storePotionsLootId;
+        public string storePotionsLootId = "ShipShopPotionsRestock";
         private LootTable storePotionsLootTable;
 
         private bool potionAdded = false;
         private LootTable.DropLevel potionDropLevel;
         private LootTable.Drop potionDrop;
+
+        public override VampireModule CreateModule() => null;
 
         public override void OnCatalogRefresh()
         {

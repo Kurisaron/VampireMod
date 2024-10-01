@@ -123,6 +123,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="LiquidVampireBlood.cs" />
     <Compile Include="ModuleBloodFocus.cs" />
     <Compile Include="ModuleCatervaCruentis.cs" />
     <Compile Include="ModuleCompel.cs" />
@@ -165,6 +166,7 @@
     <Compile Include="SkillSpellDisciple.cs" />
     <Compile Include="SkillTemporalSiphon.cs" />
     <Compile Include="SkillUndying.cs" />
+    <Compile Include="VampireEvents.cs" />
     <Compile Include="VampireModule.cs" />
     <Compile Include="SkillSire.cs" />
     <Compile Include="SkillSiphon.cs" />
@@ -172,9 +174,10 @@
     <Compile Include="Utils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Vampire.cs" />
-    <Compile Include="VampireManager.cs" />
+    <Compile Include="DataManager.cs" />
     <Compile Include="VampireSaveData.cs" />
     <Compile Include="VampireScript.cs" />
+    <Compile Include="VampireSkill.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

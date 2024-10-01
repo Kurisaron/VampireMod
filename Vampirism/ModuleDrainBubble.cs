@@ -13,80 +13,95 @@ namespace Vampirism.Skill
 {
     public class ModuleDrainBubble : VampireModule
     {
-        private Coroutine coroutine;
-        private static Zone bubbleZone = null;
-        private static SpellMergeGravity gravityMergeSpell = null;
-        public static SpellMergeGravity GravityMergeSpell
+        public override string GetSkillID() => "DrainBubble";
+
+        public override void ModuleLoaded(Vampire vampire)
         {
-            get => gravityMergeSpell;
-            set
+            base.ModuleLoaded(vampire);
+
+            Mana vampireMana = moduleVampire?.creature?.mana;
+            if (!Utils.CheckError(() => vampireMana == null, "No mana component found for vampire upon drain bubble module load"))
             {
-                if (gravityMergeSpell != null)
-                {
-                    gravityMergeSpell.OnBubbleOpen -= new SpellMergeGravity.BubbleEvent(OnBubbleOpen);
-                    gravityMergeSpell.OnBubbleClose -= new SpellMergeGravity.BubbleEvent(OnBubbleClose);
-                }
-
-                gravityMergeSpell = value;
-
-                if (value != null)
-                {
-                    gravityMergeSpell.OnBubbleOpen -= new SpellMergeGravity.BubbleEvent(OnBubbleOpen);
-                    gravityMergeSpell.OnBubbleOpen += new SpellMergeGravity.BubbleEvent(OnBubbleOpen);
-                    gravityMergeSpell.OnBubbleClose -= new SpellMergeGravity.BubbleEvent(OnBubbleClose);
-                    gravityMergeSpell.OnBubbleClose += new SpellMergeGravity.BubbleEvent(OnBubbleClose);
-                }
+                vampireMana.OnSpellLoadEvent -= new Mana.SpellLoadEvent(OnSpellLoad);
+                vampireMana.OnSpellLoadEvent += new Mana.SpellLoadEvent(OnSpellLoad);
+                vampireMana.OnSpellUnloadEvent -= new Mana.SpellLoadEvent(OnSpellUnload);
+                vampireMana.OnSpellUnloadEvent += new Mana.SpellLoadEvent(OnSpellUnload);
             }
+
         }
 
-        protected override void Awake()
+        public override void ModuleUnloaded()
         {
-            base.Awake();
-
-            coroutine = StartCoroutine(BubbleSiphonRoutine());
-        }
-
-        protected override void OnDestroy()
-        {
-            StopCoroutine(coroutine);
-            
-            base.OnDestroy();
-        }
-
-        private static void OnBubbleOpen(Mana mana, UnityEngine.Vector3 position, Zone zone)
-        {
-            bubbleZone = zone;
-        }
-
-        private static void OnBubbleClose(Mana mana, UnityEngine.Vector3 position, Zone zone)
-        {
-            bubbleZone = null;
-        }
-
-        private IEnumerator BubbleSiphonRoutine()
-        {
-            while (true)
+            Mana vampireMana = moduleVampire?.creature?.mana;
+            if (!Utils.CheckError(() => vampireMana == null, "No mana component found for vampire upon drain bubble module load"))
             {
-                BubbleSiphonUpdate();
+                vampireMana.OnSpellLoadEvent -= new Mana.SpellLoadEvent(OnSpellLoad);
+                vampireMana.OnSpellUnloadEvent -= new Mana.SpellLoadEvent(OnSpellUnload);
+            }
+
+            base.ModuleUnloaded();
+        }
+
+        private void OnSpellLoad(SpellData spell, SpellCaster caster = null)
+        {
+            if (!(spell is SpellMergeGravity spellMergeGravity))
+                return;
+
+            Creature castingCreature = caster?.mana?.creature;
+            Creature moduleCreature = moduleVampire?.creature;
+            if (castingCreature == null || moduleCreature == null || castingCreature != moduleCreature)
+                return;
+
+            spellMergeGravity.OnBubbleOpen -= new SpellMergeGravity.BubbleEvent(OnBubbleOpen);
+            spellMergeGravity.OnBubbleOpen += new SpellMergeGravity.BubbleEvent(OnBubbleOpen);
+        }
+
+        private void OnSpellUnload(SpellData spell, SpellCaster caster = null)
+        {
+            if (!(spell is SpellMergeGravity spellMergeGravity))
+                return;
+
+            Creature castingCreature = caster?.mana?.creature;
+            Creature moduleCreature = moduleVampire?.creature;
+            if (castingCreature == null || moduleCreature == null || castingCreature != moduleCreature)
+                return;
+
+            spellMergeGravity.OnBubbleOpen -= new SpellMergeGravity.BubbleEvent(OnBubbleOpen);
+        }
+
+        private void OnBubbleOpen(Mana mana, UnityEngine.Vector3 position, Zone zone)
+        {
+            moduleVampire?.StartCoroutine(BubbleSiphonRoutine(zone));
+        }
+
+        private IEnumerator BubbleSiphonRoutine(Zone zone)
+        {
+            Zone bubbleZone = zone;
+            while (bubbleZone != null)
+            {
+                BubbleSiphonUpdate(bubbleZone);
                 yield return new WaitForSeconds(0.1f);
             }
             
         }
 
-        private void BubbleSiphonUpdate()
+        private void BubbleSiphonUpdate(Zone bubbleZone)
         {
-            if (bubbleZone == null || Vampire == null) return;
+            if (bubbleZone == null || moduleVampire == null) return;
 
             Dictionary<Creature, int> zoneCreatures = bubbleZone.creaturesInZone;
             if (zoneCreatures == null || zoneCreatures.Count == 0) return;
 
+            ModuleSiphon siphonModule = moduleVampire?.skill.GetModule<ModuleSiphon>("Siphon");
+            if (siphonModule == null) return;
+
             foreach (KeyValuePair<Creature, int> keyValuePair in zoneCreatures)
             {
                 Creature creature = keyValuePair.Key;
-                if (creature.isPlayer || creature.isKilled) return;
-                if (creature.IsVampire(out Vampire vamp) && vamp.Sire == Vampire) return;
+                if (creature == null || creature.isPlayer || creature.isKilled) return;
+                if (creature.IsVampire(out Vampire vamp) && vamp.sireline.Sire == moduleVampire) return;
 
-                ModuleSiphon.Siphon(Vampire, creature);
+                siphonModule.Siphon(moduleVampire, creature);
             }
         }
 

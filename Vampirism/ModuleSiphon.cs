@@ -11,43 +11,30 @@ namespace Vampirism.Skill
 {
     public class ModuleSiphon : VampireModule
     {
-        private Coroutine coroutine;
-
-        public static SkillSiphon skill;
-
-        bool sfxPlaying = false;
-        EffectInstance sfxInstance = null;
-
         public bool IsSiphoning { get; private set; }
 
+        private bool sfxPlaying = false;
+        private EffectInstance sfxInstance = null;
 
-        public static event SiphonEvent siphonEvent;
+        public override string GetSkillID() => "Siphon";
 
-        protected override void Awake()
+        public override IEnumerator ModulePassive()
         {
-            base.Awake();
-
-            coroutine = StartCoroutine(SiphonRoutine());
-        }
-
-        protected override void OnDestroy()
-        {
-            StopCoroutine(coroutine);
-
-            base.OnDestroy();
-        }
-
-        private IEnumerator SiphonRoutine()
-        {
-            while (Vampire != null && Vampire.Creature != null)
+            while (moduleVampire != null && moduleVampire.creature != null)
             {
                 SiphonUpdate();
-                bool hasTemporalSiphon = Vampire.Creature.HasSkill("TemporalSiphon");
-                float siphonInterval = skill.siphonInterval;
-                if (hasTemporalSiphon)
-                    yield return new WaitForSecondsRealtime(siphonInterval);
+                bool hasTemporalSiphon = moduleVampire.creature.HasSkill("TemporalSiphon");
+                if (GetSkill() is SkillSiphon skillSiphon)
+                {
+                    float siphonInterval = skillSiphon.siphonInterval;
+                    if (hasTemporalSiphon)
+                        yield return new WaitForSecondsRealtime(siphonInterval);
+                    else
+                        yield return new WaitForSeconds(siphonInterval);
+                }
                 else
-                    yield return new WaitForSeconds(siphonInterval);
+                    break;
+                
             }
 
             if (sfxInstance != null)
@@ -59,12 +46,12 @@ namespace Vampirism.Skill
             Creature target = FindTarget();
             IsSiphoning = target != null;
             if (IsSiphoning)
-                Siphon(Vampire, target);
+                Siphon(moduleVampire, target);
 
             SiphonSFX(IsSiphoning);
         }
 
-        public static void Siphon(
+        public void Siphon(
             Vampire source, 
             Creature target, 
             float? overrideDamage = null,
@@ -73,43 +60,53 @@ namespace Vampirism.Skill
             bool applyPower = true,
             bool triggerEvent = true)
         {
-            float damage = source.Power > 0 ? GetDamage(source, target) : 0.0f;
+            float damage = source?.power?.PowerLevel > 0 ? GetDamage(source, target) : 0.0f;
             if (overrideDamage.HasValue)
                 damage = overrideDamage.Value;
 
             if (applyDamage)
-                target.Damage(damage, DamageType.Energy);
+                target?.Damage(damage, DamageType.Energy);
             if (applyHeal)
-                source?.Creature?.Heal(damage);
+                source?.creature?.Heal(damage);
             if (applyPower)
-                source.GainPower(damage);
+                source?.power?.GainPower(damage);
 
             if (triggerEvent)
             {
-                SiphonEvent siphon = siphonEvent;
-                if (siphon != null)
-                    siphon(source, target, damage);
+                VampireEvents.Instance?.InvokeSiphonEvent(source, target, damage);
             }
             
         }
 
-        private static float GetDamage(Vampire source, Creature target)
+        private float GetDamage(Vampire source, Creature target)
         {
-            float powerScale = source.Power / skill.powerAtSiphonPowerMax;
-            float percentage = skill.clampSiphonPower ? Mathf.Lerp(skill.siphonPowerScale.x, skill.siphonPowerScale.y, powerScale) : Mathf.LerpUnclamped(skill.siphonPowerScale.x, skill.siphonPowerScale.y, powerScale);
-            return target.maxHealth * percentage;
+            SkillData skillData = GetSkill();
+            if (skillData == null) return 0.0f;
+
+            if (skillData is SkillSiphon siphonSkill)
+            {
+                float powerScale = source.power.PowerLevel / siphonSkill.powerAtSiphonPowerMax;
+                float percentage = siphonSkill.clampSiphonPower ? Mathf.Lerp(siphonSkill.siphonPowerScale.x, siphonSkill.siphonPowerScale.y, powerScale) : Mathf.LerpUnclamped(siphonSkill.siphonPowerScale.x, siphonSkill.siphonPowerScale.y, powerScale);
+                return target.maxHealth * percentage;
+            }
+            else
+                return 0.0f;
+           
         }
 
         private Creature FindTarget()
         {
-            Vector3 sourcePosition = Vampire.Creature.jaw.position;
+            Vector3 sourcePosition = moduleVampire.creature.jaw.position;
+
+            SkillSiphon siphonSkill = GetSkill<SkillSiphon>();
+            if (Utils.CheckError(() => siphonSkill == null, "No skill data present or skill is not siphon skill")) return null;
 
             // Find all colliders within siphon range that belong to a creature that is not the siphoner
-            List<Collider> targetColliders = Physics.OverlapSphere(sourcePosition, Vampire.Creature.mouthRelay.mouthRadius * skill.siphonMouthRangeMult).ToList().FindAll(collider =>
+            List<Collider> targetColliders = Physics.OverlapSphere(sourcePosition, moduleVampire.creature.mouthRelay.mouthRadius * siphonSkill.siphonMouthRangeMult).ToList().FindAll(collider =>
             {
                 Creature creature = collider?.gameObject?.GetComponentInParent<RagdollPart>()?.ragdoll?.creature;
 
-                return creature != null && creature != Vampire.Creature && !creature.isKilled;
+                return creature != null && creature != moduleVampire.creature && !creature.isKilled;
             });
 
             if (targetColliders.Count <= 0)
@@ -146,16 +143,19 @@ namespace Vampirism.Skill
             sfxPlaying = play;
             if (play)
             {
-                sfxInstance = skill.siphonEffectData.Spawn(Vampire.Creature.ragdoll.parts.Find(part => part.type == RagdollPart.Type.Head).transform, false, null, Vampire.Creature.isPlayer);
+                SkillSiphon siphonSkill = GetSkill<SkillSiphon>();
+                if (siphonSkill == null) return;
+
+                sfxInstance = siphonSkill.siphonEffectData.Spawn(moduleVampire.creature.ragdoll.parts.Find(part => part.type == RagdollPart.Type.Head).transform, false, null, moduleVampire.creature.isPlayer);
                 sfxInstance.Play();
             }
             else
             {
+                if (sfxInstance == null) return;
                 sfxInstance.Stop();
                 sfxInstance.Despawn();
             }
         }
 
-        public delegate void SiphonEvent(Vampire source, Creature target, float damage);
     }
 }

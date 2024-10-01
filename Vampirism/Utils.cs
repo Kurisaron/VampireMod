@@ -89,17 +89,17 @@ namespace Vampirism
         #region Creature Extensions
         public static Vampire Vampirize(this Creature creature, float startingPower = 1.0f, Vampire sire = null)
         {
-            return Vampire.Vampirize(creature, startingPower, sire);
+            return Vampire.VampireUtility.Vampirize(creature, startingPower, sire);
         }
 
         public static void CureVampirism(this Creature creature)
         {
-            Vampire.Cure(creature);
+            Vampire.VampireUtility.Cure(creature);
         }
 
         public static bool IsVampire(this Creature creature, out Vampire vampire)
         {
-            return Vampire.IsVampire(creature, out vampire);
+            return Vampire.VampireUtility.IsVampire(creature, out vampire);
         }
 
         public static Vampire AffirmVampirism(this Creature creature)
@@ -110,7 +110,6 @@ namespace Vampirism
 
             return vampire;
         }
-
         #endregion
 
     }

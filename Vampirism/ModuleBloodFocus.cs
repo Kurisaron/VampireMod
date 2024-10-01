@@ -9,26 +9,28 @@ namespace Vampirism.Skill
 {
     public class ModuleBloodFocus : VampireModule
     {
-        protected override void Awake()
-        {
-            base.Awake();
+        public override string GetSkillID() => "BloodFocus";
 
-            ModuleSiphon.siphonEvent -= new ModuleSiphon.SiphonEvent(OnSiphon);
-            ModuleSiphon.siphonEvent += new ModuleSiphon.SiphonEvent(OnSiphon);
+        public override void ModuleLoaded(Vampire vampire)
+        {
+            base.ModuleLoaded(vampire);
+
+            VampireEvents.siphonEvent -= new VampireEvents.SiphonEvent(OnSiphon);
+            VampireEvents.siphonEvent += new VampireEvents.SiphonEvent(OnSiphon);
         }
 
-        protected override void OnDestroy()
+        public override void ModuleUnloaded()
         {
-            ModuleSiphon.siphonEvent -= new ModuleSiphon.SiphonEvent(OnSiphon);
-
-            base.OnDestroy();
+            VampireEvents.siphonEvent -= new VampireEvents.SiphonEvent(OnSiphon);
+            
+            base.ModuleUnloaded();
         }
 
         private void OnSiphon(Vampire source, Creature creature, float damage)
         {
-            if (source == null || Vampire == null || creature == null || source != Vampire) return;
+            if (source == null || moduleVampire == null || creature == null || source != moduleVampire) return;
 
-            source.Creature?.mana?.RegenFocus(damage);
+            moduleVampire.creature?.mana?.RegenFocus(damage);
         }
     }
 }

@@ -9,38 +9,41 @@ namespace Vampirism.Skill
 {
     public class ModuleCompel : VampireModule
     {
-        protected override void Awake()
+
+        public override string GetSkillID() => "Compel";
+
+        public override void ModuleLoaded(Vampire vampire)
         {
-            base.Awake();
+            base.ModuleLoaded(vampire);
 
             EventManager.onCreatureHit -= new EventManager.CreatureHitEvent(OnCreatureHit);
             EventManager.onCreatureHit += new EventManager.CreatureHitEvent(OnCreatureHit);
         }
 
-        protected override void OnDestroy()
+        public override void ModuleUnloaded()
         {
             EventManager.onCreatureHit -= new EventManager.CreatureHitEvent(OnCreatureHit);
 
-            base.OnDestroy();
+            base.ModuleUnloaded();
         }
 
         private void OnCreatureHit(Creature creature, CollisionInstance collisionInstance, EventTime eventTime)
         {
             // Do not compel if the target creature is null, the module's vampire/creature is null, or the target creature is the same as module's creature
-            if (creature == null || Vampire?.Creature == null || creature == Vampire.Creature) return;
+            if (creature == null || moduleVampire?.creature == null || creature == moduleVampire.creature) return;
 
             // Do not compel if the hit is not from the module's vampire
             Creature dealer = GetDealer(collisionInstance);
-            if (dealer == null || dealer != Vampire.Creature) return;
+            if (Utils.CheckError(() => dealer == null , "Compel hit event: Did not find valid damager dealer") || Utils.CheckError(() => dealer != moduleVampire.creature, "Compel hit event: Damager dealer is not the current module's vampire")) return;
 
             // Do not compel if the target creature is a vampire and its sire is the module's vampire
-            if (creature.IsVampire(out Vampire target) && target.Sire == Vampire)
+            if (creature.IsVampire(out Vampire target) && target.sireline.Sire == moduleVampire)
                 return;
 
             // Compel all of the module vampire's spawn to attack the creature hit by the module vampire's attack
-            Vampire.PerformSpawnAction(spawn =>
+            moduleVampire.sireline.PerformSpawnAction(spawn =>
             {
-                Brain brain = spawn?.Creature?.brain;
+                Brain brain = spawn?.creature?.brain;
                 if (brain == null) return;
 
                 brain.currentTarget = creature;

@@ -5,47 +5,50 @@ using System.Text;
 using System.Threading.Tasks;
 using ThunderRoad;
 using UnityEngine;
-using static ThunderRoad.CreatureSpawner;
 
 namespace Vampirism.Skill
 {
     public class ModuleCatervaCruentis : VampireModule
     {
-        public static SkillCatervaCruentis skill;
         private List<SkillData> activeSkills = new List<SkillData>();
 
-        protected override void Awake()
+        public override string GetSkillID() => "CatervaCruentis";
+
+        public override void ModuleLoaded(Vampire vampire)
         {
-            base.Awake();
+            base.ModuleLoaded(vampire);
 
             SkillData.OnSkillLoadedEvent -= new SkillData.SkillLoadedEvent(OnSkillLoaded);
             SkillData.OnSkillLoadedEvent += new SkillData.SkillLoadedEvent(OnSkillLoaded);
             SkillData.OnSkillUnloadedEvent -= new SkillData.SkillLoadedEvent(OnSkillUnloaded);
             SkillData.OnSkillUnloadedEvent += new SkillData.SkillLoadedEvent(OnSkillUnloaded);
-            Vampire.sireEvent -= new Vampire.SiredEvent(OnSired);
-            Vampire.sireEvent += new Vampire.SiredEvent(OnSired);
+            VampireEvents.sireEvent -= new Vampire.VampireEvent(OnSired);
+            VampireEvents.sireEvent += new Vampire.VampireEvent(OnSired);
         }
 
-        protected override void OnDestroy()
+        public override void ModuleUnloaded()
         {
             SkillData.OnSkillLoadedEvent -= new SkillData.SkillLoadedEvent(OnSkillLoaded);
             SkillData.OnSkillUnloadedEvent -= new SkillData.SkillLoadedEvent(OnSkillUnloaded);
-            Vampire.sireEvent -= new Vampire.SiredEvent(OnSired);
+            VampireEvents.sireEvent -= new Vampire.VampireEvent(OnSired);
 
             RemoveInheritableSkills();
 
-            base.OnDestroy();
+            base.ModuleUnloaded();
         }
 
         private void OnSkillLoaded(SkillData skillData, Creature creature)
         {
-            if (skillData == null || creature == null || Vampire?.Creature == null)
+            if (skillData == null || creature == null || moduleVampire?.creature == null)
                 return;
 
-            if (creature != Vampire.Creature)
+            if (creature != moduleVampire.creature)
                 return;
 
-            List<string> inheritableSkills = skill.inheritableSkillIds;
+            SkillCatervaCruentis catervaCruentisSkill = GetSkill<SkillCatervaCruentis>();
+            if (catervaCruentisSkill == null) return;
+
+            List<string> inheritableSkills = catervaCruentisSkill.inheritableSkillIds;
             if (inheritableSkills == null || inheritableSkills.Count <= 0)
                 return;
 
@@ -53,51 +56,54 @@ namespace Vampirism.Skill
                 return;
 
             activeSkills.Add(skillData);
-            Vampire.PerformSpawnAction(spawn =>
+            moduleVampire.sireline.PerformSpawnAction(spawn =>
             {
-                Creature spawnCreature = spawn?.Creature;
+                Creature spawnCreature = spawn?.creature;
                 if (spawnCreature == null || spawnCreature.isPlayer) return;
 
                 if (!spawnCreature.HasSkill(skillData))
-                    spawnCreature.ForceLoadSkill(skillData.id);
+                    spawnCreature.TryAddSkill(skillData);
             });
         }
 
         private void OnSkillUnloaded(SkillData skillData, Creature creature)
         {
-            if (skillData == null || creature == null || Vampire?.Creature == null)
+            if (skillData == null || creature == null || moduleVampire?.creature == null)
                 return;
 
-            if (creature != Vampire.Creature)
+            if (creature != moduleVampire.creature)
                 return;
 
-            List<string> inheritableSkills = skill.inheritableSkillIds;
+            SkillCatervaCruentis catervaCruentisSkill = GetSkill<SkillCatervaCruentis>();
+            if (catervaCruentisSkill == null) return;
+
+            List<string> inheritableSkills = catervaCruentisSkill.inheritableSkillIds;
             if (inheritableSkills == null || inheritableSkills.Count <= 0)
                 return;
 
             if (!inheritableSkills.Contains(skillData.id))
                 return;
 
-            Vampire.PerformSpawnAction(spawn =>
+            moduleVampire.sireline.PerformSpawnAction(spawn =>
             {
-                Creature spawnCreature = spawn?.Creature;
+                Creature spawnCreature = spawn?.creature;
                 if (spawnCreature == null || spawnCreature.isPlayer) return;
 
                 if (spawnCreature.HasSkill(skillData))
-                    spawnCreature.ForceUnloadSkill(skillData.id);
+                    spawnCreature.TryRemoveSkill(skillData);
             });
             activeSkills.Remove(skillData);
         }
 
         private void OnSired(Vampire vampire)
         {
-            if (vampire == null || vampire.Creature == null || Vampire == null || vampire == Vampire || vampire.Sire != Vampire)
+            if (vampire?.creature == null || moduleVampire == null || vampire == moduleVampire || vampire.sireline.Sire != moduleVampire)
                 return;
 
             if (activeSkills == null || activeSkills.Count <= 0)
                 return;
 
-            Creature spawnCreature = vampire.Creature;
+            Creature spawnCreature = vampire.creature;
             foreach (SkillData skillData in activeSkills)
             {
                 if (!spawnCreature.HasSkill(skillData))
@@ -107,12 +113,12 @@ namespace Vampirism.Skill
 
         private void RemoveInheritableSkills()
         {
-            if (Vampire == null)
+            if (moduleVampire == null)
                 return;
 
-            Vampire.PerformSpawnAction(spawn =>
+            moduleVampire.sireline.PerformSpawnAction(spawn =>
             {
-                Creature spawnCreature = spawn?.Creature;
+                Creature spawnCreature = spawn?.creature;
                 if (spawnCreature == null || spawnCreature.isPlayer) return;
                 foreach (SkillData skillData in activeSkills)
                 {

@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace Vampirism
 {
-    public class VampireManager : VampireScript<VampireManager>
+    public class DataManager : VampireScript<DataManager>
     {
 
         private VampireSaveData saveData;
@@ -30,6 +30,8 @@ namespace Vampirism
             base.ScriptLoaded(modData);
 
             LoadSkillTrees();
+
+            AddPotionToLootTable();
 
             EventManager.onPossess += new EventManager.PossessEvent(OnPossess);
             Vampire.sireEvent += new Vampire.SiredEvent(OnSired);
@@ -120,6 +122,44 @@ namespace Vampirism
             VampirismUnlockEvent vampirismUnlock = unlockEvent;
             if (vampirismUnlock != null)
                 vampirismUnlock(unlock);
+
+        }
+
+        private void AddPotionToLootTable()
+        {
+            string potionItemId = "PotionVampireBlood";
+            ItemData potionItemData = Catalog.GetData<ItemData>(potionItemId);
+            if (Utils.CheckError(() => potionItemData == null, "VampireManager: Potion item data does not exist")) return;
+
+            string[] dungeonLootIDs = { "Dalgarian_MainLoot_T1", "Dalgarian_MainLoot_T2", "Dalgarian_MainLoot_T3", "Dalgarian_SideLoot_T1", "Dalgarian_SideLoot_T2", "Dalgarian_SideLoot_T3" };
+            List<LootTable> dungeonLootTables = Catalog.GetDataList<LootTable>().FindAll(lootTable => dungeonLootIDs.Contains(lootTable.id));
+            if (dungeonLootTables == null || dungeonLootTables.Count <= 0) return;
+
+            foreach (LootTable lootTable in dungeonLootTables)
+            {
+                if (lootTable.levelledDrops.Exists(dropLevel => dropLevel.drops.Exists(drop => drop.reference == LootTable.Drop.Reference.Item && drop.referenceID == potionItemId)))
+                    continue;
+                
+                LootTable.Drop potionDrop = new LootTable.Drop()
+                {
+                    referenceID = potionItemId,
+                    reference = LootTable.Drop.Reference.Item,
+                    itemData = potionItemData,
+                    randMode = LootTable.Drop.RandMode.ItemCount,
+                    minMaxRand = new Vector2(1.0f, 1.0f),
+                    probabilityWeight = 0.2f
+                };
+                if (potionDrop == null) continue;
+
+                LootTable.DropLevel potionDropLevel = new LootTable.DropLevel()
+                {
+                    dropLevel = 0,
+                    drops = { potionDrop }
+                };
+                if (potionDropLevel == null) continue;
+
+                lootTable.levelledDrops.Add(potionDropLevel);
+            }
 
         }
         #endregion

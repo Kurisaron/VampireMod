@@ -9,28 +9,31 @@ namespace Vampirism.Skill
 {
     public class ModuleSire : VampireModule
     {
-        public static SkillSire skill;
+        public override string GetSkillID() => "Sire";
 
-        protected override void Awake()
+        public override void ModuleLoaded(Vampire vampire)
         {
-            base.Awake();
+            base.ModuleLoaded(vampire);
 
-            ModuleSiphon.siphonEvent -= new ModuleSiphon.SiphonEvent(OnSiphon);
-            ModuleSiphon.siphonEvent += new ModuleSiphon.SiphonEvent(OnSiphon);
+            VampireEvents.siphonEvent -= new VampireEvents.SiphonEvent(OnSiphon);
+            VampireEvents.siphonEvent += new VampireEvents.SiphonEvent(OnSiphon);
         }
 
-        protected override void OnDestroy()
+        public override void ModuleUnloaded()
         {
-            ModuleSiphon.siphonEvent -= new ModuleSiphon.SiphonEvent(OnSiphon);
+            VampireEvents.siphonEvent -= new VampireEvents.SiphonEvent(OnSiphon);
 
-            base.OnDestroy();
+            base.ModuleUnloaded();
         }
 
         private void OnSiphon(Vampire source, Creature target, float damage)
         {
-            if (Vampire == null || source == null || target == null || source != Vampire || target.isKilled || target.IsVampire(out _) || source.SpawnCount >= skill.GetSireAmount(source)) return;
+            SkillSire sireSkill = GetSkill<SkillSire>();
+            
+            if (moduleVampire == null || source == null || target == null || sireSkill == null || source != moduleVampire || target.isKilled || target.IsVampire(out _) || source.sireline.SpawnCount >= sireSkill.GetSireAmount(source)) return;
 
-            target.Vampirize(source.Power / 2.0f, source);
+            float spawnPower = source.power != null ? (source.power.PowerLevel / 2.0f) : 1.0f;
+            target.Vampirize(spawnPower / 2.0f, source);
         }
 
     }

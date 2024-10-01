@@ -9,7 +9,7 @@ using UnityEngine;
 namespace Vampirism.Skill
 {
     [Serializable]
-    public class SkillUndying : SkillData
+    public class SkillUndying : VampireSkill
     {
         public Vector2 regenPowerScale = new Vector2(0.01f, 0.05f);
         public float powerAtRegenMax = 23456.0f;
@@ -18,32 +18,8 @@ namespace Vampirism.Skill
         public Vector2 poolScale = new Vector2(0.0f, 100.0f);
         public float powerAtPoolMax = 23456.0f;
         public bool clampPool = false;
+
+        public override VampireModule CreateModule() => CreateModule<ModuleUndying>();
         
-        public override void OnSkillLoaded(SkillData skillData, Creature creature)
-        {
-            base.OnSkillLoaded(skillData, creature);
-
-            Vampire vampire = creature.AffirmVampirism();
-
-            ModuleUndying.skill = this;
-            vampire.AddModule<ModuleUndying>();
-        }
-
-        public override void OnSkillUnloaded(SkillData skillData, Creature creature)
-        {
-            base.OnSkillUnloaded(skillData, creature);
-
-            if (creature.IsVampire(out Vampire vampire))
-            {
-                vampire.RemoveModule<ModuleUndying>();
-            }
-            else
-            {
-                ModuleUndying undyingModule = creature.gameObject.GetComponent<ModuleUndying>();
-                if (undyingModule == null) return;
-
-                MonoBehaviour.Destroy(undyingModule);
-            }
-        }
     }
 }

@@ -10,33 +10,35 @@ namespace Vampirism.Skill
 {
     public class ModuleStride : VampireModule
     {
-        public static SkillStride skill;
-        
-        protected override void Awake()
+        public override string GetSkillID() => "Stride";
+
+        public override void ModuleLoaded(Vampire vampire)
         {
-            base.Awake();
+            base.ModuleLoaded(vampire);
 
             SetStrideModifier();
 
-            Vampire.sireEvent -= new Vampire.SiredEvent(OnPowerGained);
-            Vampire.sireEvent += new Vampire.SiredEvent(OnPowerGained);
-            Vampire.powerGainedEvent -= new Vampire.PowerGainedEvent(OnPowerGained);
-            Vampire.powerGainedEvent += new Vampire.PowerGainedEvent(OnPowerGained);
+            VampireEvents.sireEvent -= new Vampire.VampireEvent(OnPowerGained);
+            VampireEvents.sireEvent += new Vampire.VampireEvent(OnPowerGained);
+            moduleVampire.power.powerGainedEvent -= new Vampire.VampireEvent(OnPowerGained);
+            moduleVampire.power.powerGainedEvent += new Vampire.VampireEvent(OnPowerGained);
+
         }
 
-        protected override void OnDestroy()
+        public override void ModuleUnloaded()
         {
-            Vampire.Creature?.currentLocomotion?.RemoveSpeedModifier(this);
+            moduleVampire?.creature?.currentLocomotion?.RemoveSpeedModifier(this);
 
-            Vampire.sireEvent -= new Vampire.SiredEvent(OnPowerGained);
-            Vampire.powerGainedEvent -= new Vampire.PowerGainedEvent(OnPowerGained);
+            VampireEvents.sireEvent -= new Vampire.VampireEvent(OnPowerGained);
+            if (moduleVampire?.power != null)
+                moduleVampire.power.powerGainedEvent -= new Vampire.VampireEvent(OnPowerGained);
 
-            base.OnDestroy();
+            base.ModuleUnloaded();
         }
 
         private void OnPowerGained(Vampire check)
         {
-            if (check == null || Vampire == null || check != Vampire)
+            if (check == null || moduleVampire == null || check != moduleVampire)
                 return;
 
             SetStrideModifier();
@@ -44,11 +46,18 @@ namespace Vampirism.Skill
 
         private void SetStrideModifier()
         {
-            Creature creature = Vampire?.Creature;
-            if (creature == null) return;
+            Creature creature = moduleVampire?.creature;
+            SkillStride strideSkill = GetSkill<SkillStride>();
+            if (creature == null || strideSkill == null) return;
 
-            float runSpeedMultiplier = skill.clampRunSpeed ? Mathf.Lerp(skill.runSpeedMultScale.x, skill.runSpeedMultScale.y, Vampire.Power / skill.powerAtRunSpeedMax) : Mathf.LerpUnclamped(skill.runSpeedMultScale.x, skill.runSpeedMultScale.y, Vampire.Power / skill.powerAtRunSpeedMax);
-            float jumpForceMultiplier = skill.clampJumpPower ? Mathf.Lerp(skill.jumpPowerMultScale.x, skill.jumpPowerMultScale.y, Vampire.Power / skill.powerAtJumpPowerMax) : Mathf.LerpUnclamped(skill.jumpPowerMultScale.x, skill.jumpPowerMultScale.y, Vampire.Power / skill.powerAtJumpPowerMax);
+            Vector2 runSpeedMultiplierRange = strideSkill.runSpeedMultScale;
+            float runSpeedScaleValue = moduleVampire.power.PowerLevel / strideSkill.powerAtRunSpeedMax;
+            float runSpeedMultiplier = strideSkill.clampRunSpeed ? Mathf.Lerp(runSpeedMultiplierRange.x, runSpeedMultiplierRange.y, runSpeedScaleValue) : Mathf.LerpUnclamped(runSpeedMultiplierRange.x, runSpeedMultiplierRange.y, runSpeedScaleValue);
+
+            Vector2 jumpForceMultiplierRange = strideSkill.jumpPowerMultScale;
+            float jumpForceScaleValue = moduleVampire.power.PowerLevel / strideSkill.powerAtJumpPowerMax;
+            float jumpForceMultiplier = strideSkill.clampJumpPower ? Mathf.Lerp(jumpForceMultiplierRange.x, jumpForceMultiplierRange.y, jumpForceScaleValue) : Mathf.LerpUnclamped(jumpForceMultiplierRange.x, jumpForceMultiplierRange.y, jumpForceScaleValue);
+
             creature.currentLocomotion.SetSpeedModifier(this, 1, 1, 1, runSpeedMultiplier, jumpForceMultiplier, 1);
         }
     }

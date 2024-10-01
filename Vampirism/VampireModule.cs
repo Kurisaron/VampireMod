@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,23 +9,21 @@ using UnityEngine;
 
 namespace Vampirism.Skill
 {
-    public abstract class VampireModule : MonoBehaviour
+    public abstract class VampireModule
     {
-        private Vampire vampire;
-        protected Vampire Vampire { get => vampire; }
+        public Vampire moduleVampire;
 
-        public bool DestructionReady { get; protected set; }
-
-
-        protected virtual void Awake()
+        public virtual void ModuleLoaded(Vampire vampire)
         {
-            vampire = GetComponent<Vampire>();
-            DestructionReady = true;
+            moduleVampire = vampire;
         }
 
-        protected virtual void OnDestroy()
-        {
+        public virtual void ModuleUnloaded() { }
+        public virtual IEnumerator ModulePassive() => null;
 
-        }
+        public abstract string GetSkillID();
+        public SkillData GetSkill() => Catalog.GetData<SkillData>(GetSkillID());
+        public SkillType GetSkill<SkillType>() where SkillType : SkillData => GetSkill() as SkillType;
     }
+
 }
