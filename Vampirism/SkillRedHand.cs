@@ -9,33 +9,9 @@ using UnityEngine;
 namespace Vampirism.Skill
 {
     [Serializable]
-    public class SkillRedHand : SkillData
+    public class SkillRedHand : VampireSkill
     {
-        public override void OnSkillLoaded(SkillData skillData, Creature creature)
-        {
-            base.OnSkillLoaded(skillData, creature);
+        public override VampireModule CreateModule() => CreateModule<ModuleRedHand>();
 
-            Vampire vampire = creature.AffirmVampirism();
-
-            vampire.AddModule<ModuleRedHand>();
-        }
-
-        public override void OnSkillUnloaded(SkillData skillData, Creature creature)
-        {
-            base.OnSkillUnloaded(skillData, creature);
-
-            if (creature.IsVampire(out Vampire vampire))
-            {
-                vampire.RemoveModule<ModuleRedHand>();
-            }
-            else
-            {
-                ModuleRedHand redHandModule = creature.gameObject.GetComponent<ModuleRedHand>();
-                if (redHandModule == null) return;
-
-                MonoBehaviour.Destroy(redHandModule);
-            }
-
-        }
     }
 }

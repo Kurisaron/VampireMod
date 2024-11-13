@@ -15,13 +15,9 @@ namespace Vampirism
     {
 
         private VampireSaveData saveData;
-
-        private Dictionary<string, SkillTreeData> skillTrees;
-        public SkillTreeData VampireSkillTree { get => GetSkillTree("Vampire"); }
-
+        
         #region EVENT PUBLISHERS
         public static event PossessLoadEvent possessLoadEvent;
-        public static event VampirismUnlockEvent unlockEvent;
         #endregion
 
         #region OVERRIDES
@@ -29,14 +25,13 @@ namespace Vampirism
         {
             base.ScriptLoaded(modData);
 
-            LoadSkillTrees();
-
-            AddPotionToLootTable();
+            //AddPotionToLootTable();
 
             EventManager.onPossess += new EventManager.PossessEvent(OnPossess);
-            Vampire.sireEvent += new Vampire.SiredEvent(OnSired);
-            Vampire.powerGainedEvent += new Vampire.PowerGainedEvent(OnPowerGained);
-            Vampire.curedEvent += new Vampire.CuredEvent(OnCured);
+
+            VampireEvents.sireEvent += new Vampire.VampireEvent(OnSired);
+            VampireEvents.curedEvent += new VampireEvents.CuredEvent(OnCured);
+            VampireEvents.powerGainedEvent += new Vampire.VampireEvent(OnPowerGained);
         }
 
         public override void ScriptUpdate()
@@ -45,86 +40,7 @@ namespace Vampirism
         }
         #endregion
 
-        #region SAVE DATA
-        private void AffirmSaveData(string sourceFunction = "")
-        {
-            string functionName = "[" + sourceFunction + "->" + nameof(AffirmSaveData) + "]";
-
-            if (saveData != null)
-            {
-                Debug.Log(functionName + " Save data already present.");
-                return;
-            }
-
-            if (VampireSaveData.TryLoadSave(Player.characterData, out saveData))
-                Debug.Log(functionName + " Save data loaded from json file");
-            else
-                Debug.LogWarning(functionName + " Could not load data from json file, creating new save data instead");
-        }
-        #endregion
-
-        #region SKILL TREES
-        private void LoadSkillTrees()
-        {
-            skillTrees = new Dictionary<string, SkillTreeData>();
-            string[] treeIDs = { "Vampire" };
-            for (int i = 0; i < treeIDs.Length; i++)
-            {
-                GetSkillTree(treeIDs[i]).showInInfuser = false;
-            }
-        }
-
-        private void RefreshSkillTrees()
-        {
-            foreach (SkillTreeData skillTree in skillTrees.Values)
-            {
-                skillTree.showInInfuser = saveData != null ? saveData.VampirismUnlocked : false;
-            }
-        }
-
-        private SkillTreeData GetSkillTree(string ID)
-        {
-            bool contains = skillTrees.ContainsKey(ID);
-            SkillTreeData skillTreeData = null;
-            if (!contains)
-            {
-                bool treeInCatalog = Catalog.TryGetData<SkillTreeData>(ID, out skillTreeData);
-                if (treeInCatalog)
-                {
-                    skillTrees.Add(ID, skillTreeData);
-                    Debug.Log("Skill tree " + ID + " found from catalog");
-                }
-                else
-                    Debug.LogError("Skill tree " + ID + " could not be found in the catalog");
-            }
-            else
-                skillTreeData = skillTrees[ID];
-
-            return skillTreeData;
-        }
-        #endregion
-
         #region VAMPIRISM UNLOCKING
-        private void UnlockVampirism(bool unlock)
-        {
-            AffirmSaveData(nameof(UnlockVampirism));
-
-            if (unlock == saveData.VampirismUnlocked)
-            {
-                Debug.LogWarning("Did not perform unlock toggle. Wanted to " + (unlock ? "en" : "dis") + "able, but vampirism is already " + (unlock ? "" : "not ") + "unlocked");
-                return;
-            }
-
-            saveData.VampirismUnlocked = unlock;
-
-            RefreshSkillTrees();
-
-            VampirismUnlockEvent vampirismUnlock = unlockEvent;
-            if (vampirismUnlock != null)
-                vampirismUnlock(unlock);
-
-        }
-
         private void AddPotionToLootTable()
         {
             string potionItemId = "PotionVampireBlood";
@@ -132,11 +48,12 @@ namespace Vampirism
             if (Utils.CheckError(() => potionItemData == null, "VampireManager: Potion item data does not exist")) return;
 
             string[] dungeonLootIDs = { "Dalgarian_MainLoot_T1", "Dalgarian_MainLoot_T2", "Dalgarian_MainLoot_T3", "Dalgarian_SideLoot_T1", "Dalgarian_SideLoot_T2", "Dalgarian_SideLoot_T3" };
-            List<LootTable> dungeonLootTables = Catalog.GetDataList<LootTable>().FindAll(lootTable => dungeonLootIDs.Contains(lootTable.id));
+            List<LootTable> dungeonLootTables = Catalog.GetDataList<LootTable>().FindAll(lootTable => lootTable != null && dungeonLootIDs.Contains(lootTable.id));
             if (dungeonLootTables == null || dungeonLootTables.Count <= 0) return;
 
             foreach (LootTable lootTable in dungeonLootTables)
             {
+                if (lootTable == null) continue;
                 if (lootTable.levelledDrops.Exists(dropLevel => dropLevel.drops.Exists(drop => drop.reference == LootTable.Drop.Reference.Item && drop.referenceID == potionItemId)))
                     continue;
                 
@@ -170,14 +87,25 @@ namespace Vampirism
             if (eventTime == EventTime.OnStart || !creature.isPlayer)
                 return;
 
-            AffirmSaveData(nameof(OnPossess));
+            string functionName = this.GetDebugID(nameof(OnPossess));
+
+            ValidateSave();
 
             Vampire vampire = null;
-            if (saveData.VampirismUnlocked)
+            if (!Utils.CheckError(() => saveData == null, functionName + " Save data is still null despite attempting to create a new one from defaults") && (saveData.IsVampire || creature.IsVampire(out vampire)))
             {
-                float power = Mathf.Max(saveData.Power, 1.0f);
-                vampire = creature.Vampirize(power);
-                RefreshSkillTrees();
+                if (creature.IsVampire(out vampire) && !saveData.IsVampire)
+                {
+                    Debug.LogWarning(functionName + " Player creature is already a vampire despite save data not saying it should be, updating save data to match");
+                    saveData.IsVampire = true;
+                }
+                    
+                if (saveData.IsVampire)
+                {
+                    Debug.Log(functionName + " Player should be vampire according to save " + (saveData?.ID ?? "NULL"));
+                    float power = Mathf.Max(saveData.Power, 1.0f);
+                    vampire = creature.Vampirize(power);
+                }
             }
 
             PossessLoadEvent loadEvent = possessLoadEvent;
@@ -188,30 +116,54 @@ namespace Vampirism
 
         private void OnSired(Vampire vampire)
         {
-            if (vampire == null || vampire.Creature == null || !vampire.Creature.isPlayer)
-                return;
+            string functionName = this.GetDebugID(nameof(OnSired));
 
-            UnlockVampirism(true);
+            if (Utils.CheckError(() => vampire == null, functionName + " Vampire is null")) return;
+            if (Utils.CheckError(() => !vampire.isPlayer, functionName + " Vampire is not player")) return;
+
+            ValidateSave();
+
+            saveData.IsVampire = true;
+        }
+
+        private void OnCured(Creature creature, EventTime eventTime)
+        {
+            string functionName = this.GetDebugID(nameof(OnCured));
+
+            if (Utils.CheckError(() => creature == null, functionName + " Creature is null")) return;
+            if (Utils.CheckError(() => !creature.isPlayer, functionName + " Creature is not player")) return;
+
+            ValidateSave();
+
+            saveData.IsVampire = false;
         }
 
         private void OnPowerGained(Vampire vampire)
         {
-            if (vampire == null || vampire.Creature == null || !vampire.Creature.isPlayer)
-                return;
+            string functionName = this.GetDebugID(nameof(OnPowerGained));
 
-            AffirmSaveData(nameof(OnPowerGained));
+            if (Utils.CheckError(() => vampire == null, functionName + " Vampire is null")) return;
+            if (Utils.CheckError(() => !vampire.isPlayer, functionName + " Vampire is not player")) return;
 
-            saveData.Power = vampire.Power;
-        }
+            ValidateSave();
 
-        private void OnCured(Creature creature)
-        {
-            if (creature == null || !creature.isPlayer)
-                return;
+            saveData.Power = vampire?.power?.PowerLevel ?? -1.0f;
 
-            UnlockVampirism(false);
         }
         #endregion
+
+        private void ValidateSave()
+        {
+            string functionName = this.GetDebugID(nameof(ValidateSave));
+
+            if (Utils.CheckError(() => Player.characterData == null, functionName + " Player save data is null")) return;
+
+            if (VampireSaveData.TryLoadSave(Player.characterData.ID, out saveData))
+                Debug.Log(functionName + " Save data loaded from json file");
+            else
+                Debug.LogWarning(functionName + " Could not load data from json file, creating new save data instead");
+
+        }
 
         #region DELEGATE DEFINITIONS
         public delegate void PossessLoadEvent(Creature creature, Vampire vampire);

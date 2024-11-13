@@ -11,7 +11,11 @@ namespace Vampirism.Skill
     [Serializable]
     public class SkillFortitude : VampireSkill
     {
-        public Vector2 resistancePowerScale = new Vector2(0.75f, 0.2f);
+        public Vector2 healthBoostRange = new Vector2(1.5f, 10.0f);
+        public float powerAtHealthBoostMax = 12345.0f;
+        public bool clampHealthBoost = false;
+        
+        public Vector2 resistanceRange = new Vector2(0.75f, 0.2f);
         public float powerAtResistanceMax = 12345.0f;
         public bool clampResistance = false;
 

@@ -30,7 +30,7 @@ namespace Vampirism.Skill
         {
             if (source == null || moduleVampire == null || creature == null || source != moduleVampire) return;
 
-            moduleVampire.creature?.mana?.RegenFocus(damage);
+            moduleVampire.Creature?.mana?.RegenFocus(damage);
         }
     }
 }

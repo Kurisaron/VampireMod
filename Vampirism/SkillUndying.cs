@@ -11,6 +11,7 @@ namespace Vampirism.Skill
     [Serializable]
     public class SkillUndying : VampireSkill
     {
+        public bool performRegen = false;
         public Vector2 regenPowerScale = new Vector2(0.01f, 0.05f);
         public float powerAtRegenMax = 23456.0f;
         public bool clampRegen = false;

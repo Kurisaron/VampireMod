@@ -20,7 +20,6 @@ namespace Vampirism.Skill
                 if (moduleVampire == null || undyingSkill == null)
                     return 0;
 
-
                 return undyingSkill.clampPool ? Mathf.Lerp(undyingSkill.poolScale.x, undyingSkill.poolScale.y, moduleVampire.power.PowerLevel / undyingSkill.powerAtPoolMax) : Mathf.LerpUnclamped(undyingSkill.poolScale.x, undyingSkill.poolScale.y, moduleVampire.power.PowerLevel / undyingSkill.powerAtPoolMax);
             }
         }
@@ -31,7 +30,7 @@ namespace Vampirism.Skill
         {
             base.ModuleLoaded(vampire);
 
-            Creature moduleCreature = moduleVampire?.creature;
+            Creature moduleCreature = moduleVampire?.Creature;
             if (moduleCreature != null)
             {
                 moduleCreature.OnDamageEvent -= new Creature.DamageEvent(OnCreatureHit);
@@ -40,7 +39,7 @@ namespace Vampirism.Skill
         }
         public override void ModuleUnloaded()
         {
-            Creature moduleCreature = moduleVampire?.creature;
+            Creature moduleCreature = moduleVampire?.Creature;
             if (moduleCreature != null)
             {
                 moduleCreature.OnDamageEvent -= new Creature.DamageEvent(OnCreatureHit);
@@ -52,9 +51,15 @@ namespace Vampirism.Skill
         {
             SkillUndying undyingSkill = GetSkill<SkillUndying>();
 
-            while (moduleVampire?.creature != null && undyingSkill != null)
+            while (moduleVampire?.Creature != null && undyingSkill != null)
             {
-                Creature creature = moduleVampire.creature;
+                if (!undyingSkill.performRegen)
+                {
+                    yield return new WaitForSeconds(undyingSkill.regenInterval);
+                    continue;
+                }
+                
+                Creature creature = moduleVampire.Creature;
                 if (creature.currentHealth >= creature.maxHealth && currentHealthPool >= MaxHealthPool)
                 {
                     yield return new WaitForSeconds(undyingSkill.regenInterval);
@@ -80,9 +85,9 @@ namespace Vampirism.Skill
             if (eventTime == EventTime.OnStart || collisionInstance == null) return;
             float damageDone = collisionInstance.damageStruct.damage;
             float healAmount = Mathf.Min(damageDone, currentHealthPool);
-            if (moduleVampire?.creature == null)
+            if (moduleVampire?.Creature == null)
                 return;
-            moduleVampire.creature.Heal(healAmount);
+            moduleVampire.Creature.Heal(healAmount);
             currentHealthPool -= healAmount;
             if (currentHealthPool < 0)
                 currentHealthPool = 0;

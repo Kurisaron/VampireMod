@@ -9,36 +9,11 @@ using UnityEngine;
 namespace Vampirism.Skill
 {
     [Serializable]
-    public class SkillMementoMori : SkillData
+    public class SkillMementoMori : VampireSkill
     {
         public float mementoMoriRange = 10.0f;
 
-        public override void OnSkillLoaded(SkillData skillData, Creature creature)
-        {
-            base.OnSkillLoaded(skillData, creature);
+        public override VampireModule CreateModule() => CreateModule<ModuleMementoMori>();
 
-            Vampire vampire = creature.AffirmVampirism();
-
-            ModuleMementoMori.skill = this;
-            vampire.AddModule<ModuleMementoMori>();
-        }
-
-        public override void OnSkillUnloaded(SkillData skillData, Creature creature)
-        {
-            base.OnSkillUnloaded(skillData, creature);
-
-            if (creature.IsVampire(out Vampire vampire))
-            {
-                vampire.RemoveModule<ModuleMementoMori>();
-            }
-            else
-            {
-                ModuleMementoMori deathModule = creature.gameObject.GetComponent<ModuleMementoMori>();
-                if (deathModule == null) return;
-
-                MonoBehaviour.Destroy(deathModule);
-            }
-
-        }
     }
 }

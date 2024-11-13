@@ -23,7 +23,7 @@ namespace Vampirism.Skill
         {
             if (vampire == null || vampire.power == null) return 0;
 
-            return vampire.power.PowerLevel > 0.0f ? Mathf.FloorToInt(clampSireAmount ? Mathf.Lerp(sireAmountScale.x, sireAmountScale.y, vampire.Power / powerAtSireAmountMax) : Mathf.LerpUnclamped(sireAmountScale.x, sireAmountScale.y, vampire.Power / powerAtSireAmountMax)) : 0;
+            return vampire.power.PowerLevel > 0.0f ? Mathf.FloorToInt(clampSireAmount ? Mathf.Lerp(sireAmountScale.x, sireAmountScale.y, vampire.power.PowerLevel / powerAtSireAmountMax) : Mathf.LerpUnclamped(sireAmountScale.x, sireAmountScale.y, vampire.power.PowerLevel / powerAtSireAmountMax)) : 0;
         }
     }
 }

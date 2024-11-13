@@ -12,70 +12,135 @@ namespace Vampirism.Skill
 {
     public class ModuleProfanedSun : VampireModule
     {
-        public static SkillProfanedSun skill;
         
-        private SpellMergeFire spell;
-        public SpellMergeFire Spell
+        public override string GetSkillID() => "ProfanedSun";
+
+        public override void ModuleLoaded(Vampire vampire)
         {
-            get => spell;
-            set
+            base.ModuleLoaded(vampire);
+
+            Mana vampireMana = moduleVampire?.Creature?.mana;
+            if (!Utils.CheckError(() => vampireMana == null, "No mana component found for vampire upon profaned sun module load"))
             {
-                if (spell == value)
-                    return;
-                
-                if (spell != null)
-                {
-                    spell.OnThrowEvent -= new SpellMergeFire.ThrowEvent(OnThrow);
-                }
-
-                spell = value;
-
-                if (spell != null)
-                {
-                    spell.OnThrowEvent -= new SpellMergeFire.ThrowEvent(OnThrow);
-                    spell.OnThrowEvent += new SpellMergeFire.ThrowEvent(OnThrow);
-                }
+                vampireMana.OnSpellLoadEvent -= new Mana.SpellLoadEvent(OnSpellLoad);
+                vampireMana.OnSpellLoadEvent += new Mana.SpellLoadEvent(OnSpellLoad);
+                vampireMana.OnSpellUnloadEvent -= new Mana.SpellLoadEvent(OnSpellUnload);
+                vampireMana.OnSpellUnloadEvent += new Mana.SpellLoadEvent(OnSpellUnload);
             }
+        }
+
+        public override void ModuleUnloaded()
+        {
+            Mana vampireMana = moduleVampire?.Creature?.mana;
+            if (!Utils.CheckError(() => vampireMana == null, "No mana component found for vampire upon profaned sun module unload"))
+            {
+                vampireMana.OnSpellLoadEvent -= new Mana.SpellLoadEvent(OnSpellLoad);
+                vampireMana.OnSpellUnloadEvent -= new Mana.SpellLoadEvent(OnSpellUnload);
+            }
+
+            base.ModuleUnloaded();
+        }
+
+        private void OnSpellLoad(SpellData spell, SpellCaster caster = null)
+        {
+            if (!(spell is SpellMergeFire spellMergeFire))
+                return;
+
+            string debugPrefix = GetDebugPrefix(nameof(OnSpellLoad));
+
+            Debug.Log(debugPrefix + " Fire merge spell loaded");
+
+            Creature casterCreature = caster?.ragdollHand?.creature;
+            Creature moduleCreature = moduleVampire?.Creature;
+            if (Utils.CheckError(() => casterCreature == null, debugPrefix + " Spell caster creature is null")
+                || Utils.CheckError(() => moduleCreature == null, debugPrefix + " Module creature is null")
+                || Utils.CheckError(() => casterCreature != moduleCreature, debugPrefix + " Caster creature is not module creature")) return;
+
+            spellMergeFire.OnThrowEvent -= new SpellMergeFire.ThrowEvent(OnThrow);
+            spellMergeFire.OnThrowEvent += new SpellMergeFire.ThrowEvent(OnThrow);
+
+        }
+
+        private void OnSpellUnload(SpellData spell, SpellCaster caster = null)
+        {
+            if (!(spell is SpellMergeFire spellMergeFire))
+                return;
+
+            string debugPrefix = GetDebugPrefix(nameof(OnSpellUnload));
+
+            Debug.Log(debugPrefix + " Fire merge spell unloaded");
+
+            Creature casterCreature = caster?.ragdollHand?.creature;
+            Creature moduleCreature = moduleVampire?.Creature;
+            if (Utils.CheckError(() => casterCreature == null, debugPrefix + " Spell caster creature is null")
+                || Utils.CheckError(() => moduleCreature == null, debugPrefix + " Module creature is null")
+                || Utils.CheckError(() => casterCreature != moduleCreature, debugPrefix + " Caster creature is not module creature")) return;
+
+            spellMergeFire.OnThrowEvent -= new SpellMergeFire.ThrowEvent(OnThrow);
         }
 
         private void OnThrow(SpellMergeFire spellMergeFire, ItemMagicAreaProjectile projectile, Vector3 velocity)
         {
-            if (spellMergeFire == null || spell == null || spell != spellMergeFire)
-                return;
+            string debugPrefix = GetDebugPrefix(nameof(OnThrow));
+            debugPrefix = debugPrefix ?? "NULL";
 
             if (projectile == null)
+            {
+                Debug.LogError(debugPrefix + " No projectile thrown");
                 return;
+            }
 
-            StartCoroutine(SunRoutine(projectile));
+            Coroutine sunRoutine = moduleVampire?.StartCoroutine(SunRoutine(projectile));
+            if (sunRoutine == null)
+                Debug.LogError(debugPrefix + " Sun routine not started");
         }
 
         private IEnumerator SunRoutine(ItemMagicAreaProjectile projectile)
         {
-            while (projectile != null && Vampire != null)
+            string debugPrefix = GetDebugPrefix(nameof(SunRoutine));
+
+            Debug.Log(debugPrefix + " Sun routine started");
+            
+            SkillProfanedSun profanedSunSkill = GetSkill<SkillProfanedSun>();
+            ModuleSiphon siphonModule = moduleVampire?.skill?.GetModule<ModuleSiphon>("Siphon");
+            while (true)
             {
-                Vector3 effectOrigin = projectile.item?.transform?.position ?? projectile.transform.position;
-                float effectRadius = skill.clampSunRadius ? Mathf.Lerp(skill.sunRadiusScale.x, skill.sunRadiusScale.y, Vampire.Power / skill.powerAtSunRadiusMax) : Mathf.LerpUnclamped(skill.sunRadiusScale.x, skill.sunRadiusScale.y, Vampire.Power / skill.powerAtSunRadiusMax);
+                Debug.Log(GetDebugPrefix(nameof(SunRoutine)) + " Sun routine tick start");
+
+                if (Utils.CheckError(() => projectile == null, debugPrefix + " Projectile is null")) break;
+                if (Utils.CheckError(() => moduleVampire == null, debugPrefix + " Module vampire is null")) break;
+                if (Utils.CheckError(() => profanedSunSkill == null, debugPrefix + " Skill data is null")) break;
+                if (Utils.CheckError(() => siphonModule == null, debugPrefix + " Siphon module for module vampire is null")) break;
+
+                Transform sunTransform = projectile.item?.transform ?? projectile.transform;
+                if (Utils.CheckError(() => sunTransform == null, debugPrefix + " Transform used for sun aoe is null")) break;
+                Vector3 effectOrigin = sunTransform.position;
+                float effectRadius = profanedSunSkill.clampSunRadius ? Mathf.Lerp(profanedSunSkill.sunRadiusScale.x, profanedSunSkill.sunRadiusScale.y, moduleVampire.power.PowerLevel / profanedSunSkill.powerAtSunRadiusMax) : Mathf.LerpUnclamped(profanedSunSkill.sunRadiusScale.x, profanedSunSkill.sunRadiusScale.y, moduleVampire.power.PowerLevel / profanedSunSkill.powerAtSunRadiusMax);
 
                 List<Creature> targets = Creature.allActive.FindAll(creature => creature != null && !creature.pooled && Vector3.Distance(creature.ragdoll.transform.position, effectOrigin) < effectRadius);
-                if (targets == null || targets.Count <= 0)
+                if (targets != null && targets.Count > 0)
                 {
-                    yield return new WaitForSeconds(skill.sunInterval);
-                    continue;
+                    foreach (Creature target in targets)
+                    {
+                        if (Utils.CheckError(() => target == null, debugPrefix + " Target is null")
+                            || Utils.CheckError(() => target.pooled, debugPrefix + " Target is pooled"))
+                            continue;
+
+                        if (target.IsVampire(out Vampire targetVampire) && targetVampire == moduleVampire)
+                            continue;
+
+                        siphonModule.Siphon(moduleVampire, target);
+                    }
                 }
+                else
+                    Debug.Log(GetDebugPrefix(nameof(SunRoutine)) + " No targets found for profaned sun AOE");
 
-                foreach (Creature target in targets)
-                {
-                    if (target.pooled)
-                        continue;
+                Debug.Log(GetDebugPrefix(nameof(SunRoutine)) + " Sun routine tick end");
 
-                    if (target.IsVampire(out Vampire targetVampire) && targetVampire == Vampire)
-                        continue;
-
-                    ModuleSiphon.Siphon(Vampire, target);
-                }
-
-                yield return new WaitForSeconds(skill.sunInterval);
+                yield return new WaitForSeconds(profanedSunSkill.sunInterval);
             }
+
+            Debug.Log(GetDebugPrefix(nameof(SunRoutine)) + " Sun routine ended");
         }
     }
 }

@@ -11,31 +11,36 @@ namespace Vampirism.Skill
 {
     public class ModuleTemporalSiphon : VampireModule
     {
-        public static SkillTemporalSiphon skill;
-        
-        protected override void Awake()
-        {
-            base.Awake();
+        public override string GetSkillID() => "TemporalSiphon";
 
-            ModuleSiphon.siphonEvent -= new ModuleSiphon.SiphonEvent(OnSiphon);
-            ModuleSiphon.siphonEvent += new ModuleSiphon.SiphonEvent(OnSiphon);
+        public override void ModuleLoaded(Vampire vampire)
+        {
+            base.ModuleLoaded(vampire);
+
+            VampireEvents.siphonEvent -= new VampireEvents.SiphonEvent(OnSiphon);
+            VampireEvents.siphonEvent += new VampireEvents.SiphonEvent(OnSiphon);
         }
 
-        protected override void OnDestroy()
+        public override void ModuleUnloaded()
         {
-            ModuleSiphon.siphonEvent -= new ModuleSiphon.SiphonEvent(OnSiphon);
-
-            base.OnDestroy();
+            VampireEvents.siphonEvent -= new VampireEvents.SiphonEvent(OnSiphon);
+            
+            base.ModuleUnloaded();
         }
 
         private void OnSiphon(Vampire source, Creature target, float damage)
         {
-            if (source == null || Vampire == null || target == null || skill == null || source != Vampire) return;
+            SkillTemporalSiphon temporalSiphonSkill = GetSkill<SkillTemporalSiphon>();
+            if (source == null || moduleVampire == null || target == null || temporalSiphonSkill == null || source != moduleVampire) return;
 
-            if (target.IsVampire(out Vampire vampire) && vampire.Sire == Vampire)
+            if (target.IsVampire(out Vampire vampire) && vampire.sireline.Sire == moduleVampire)
                 return;
 
-            target.Inflict(skill.statusData, this, skill.duration, skill.slowMult);
+            Vector2 durationMultScale = temporalSiphonSkill.durationMultScale;
+            float durationPowerScale = moduleVampire.power.PowerLevel / temporalSiphonSkill.powerAtDurationMultMax;
+            float slowDuration = temporalSiphonSkill.clampDurationMult ? Mathf.Lerp(durationMultScale.x, durationMultScale.y, durationPowerScale) : Mathf.LerpUnclamped(durationMultScale.x, durationMultScale.y, durationPowerScale);
+
+            target.Inflict(temporalSiphonSkill.statusData, this, slowDuration, temporalSiphonSkill.slowMult);
         }
     }
 }

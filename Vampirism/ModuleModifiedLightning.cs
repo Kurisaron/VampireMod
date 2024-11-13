@@ -8,10 +8,11 @@ using UnityEngine;
 
 namespace Vampirism.Skill
 {
-    [Serializable]
-    public class SkillCompel : VampireSkill
+    public class ModuleModifiedLightning : SpellModifierModule
     {
-        public override VampireModule CreateModule() => CreateModule<ModuleCompel>();
+        public override string GetSkillID() => "ModifiedLightning";
+
+        protected override string GetSpellID() => "Lightning";
 
     }
 }

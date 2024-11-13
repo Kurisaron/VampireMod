@@ -11,87 +11,101 @@ namespace Vampirism.Skill
 {
     public class ModuleMend : VampireModule
     {
-        public static SkillMend skill;
         
-        private Coroutine leftHandRoutine;
-        private Coroutine rightHandRoutine;
-        
-        protected override void Awake()
+        public override string GetSkillID() => "Mend";
+
+        public override IEnumerator ModulePassive()
         {
-            base.Awake();
+            Debug.Log(GetDebugPrefix(nameof(ModulePassive)) + " Passive routine started");
 
-            PlayerControl.local.OnButtonPressEvent -= new PlayerControl.ButtonEvent(OnButtonPress);
-            PlayerControl.local.OnButtonPressEvent += new PlayerControl.ButtonEvent(OnButtonPress);
-        }
-
-        protected override void OnDestroy()
-        {
-            PlayerControl.local.OnButtonPressEvent -= new PlayerControl.ButtonEvent(OnButtonPress);
-            if (leftHandRoutine != null)
-                StopCoroutine(leftHandRoutine);
-            if (rightHandRoutine != null)
-                StopCoroutine(rightHandRoutine);
-
-            base.OnDestroy();
-        }
-
-        private void OnButtonPress(PlayerControl.Hand hand, PlayerControl.Hand.Button button, bool pressed)
-        {
-            // Mend routine should only start when the alt use button is pressed
-            if (button != PlayerControl.Hand.Button.AlternateUse) return;
-
-            Side handSide = hand.side;
-
-            // Perform if the alternate use button is released
-            if (!pressed)
+            SkillMend mendSkill = GetSkill<SkillMend>();
+            Creature moduleCreature = moduleVampire?.Creature;
+            while (true)
             {
-                // End the mend routine on the given side if it is not already ended
-                Coroutine stopRoutine = handSide == Side.Left ? leftHandRoutine : rightHandRoutine;
-                if (stopRoutine != null)
-                    StopCoroutine(stopRoutine);
+                Debug.Log(GetDebugPrefix(nameof(ModulePassive)) + " Passive routine tick started");
+
+                if (mendSkill == null)
+                {
+                    Debug.LogError(GetDebugPrefix(nameof(ModulePassive)) + " Mend skill not present");
+                    break;
+                }
+
+                if (moduleCreature == null)
+                {
+                    Debug.LogError(GetDebugPrefix(nameof(ModulePassive)) + " Module creature/vampire not present");
+                    break;
+                }
+                    
+                if (!moduleCreature.isPlayer)
+                {
+                    Debug.LogError(GetDebugPrefix(nameof(ModulePassive)) + " Module vampire is not the player");
+                    break;
+                }
+
+                Debug.Log(GetDebugPrefix(nameof(ModulePassive)) + " Passive routine tick checks cleared");
+
+                Mend(mendSkill, moduleCreature.handLeft, moduleCreature.handRight);
+
+                Debug.Log(GetDebugPrefix(nameof(ModulePassive)) + " Passive routine tick ended");
+
+                yield return new WaitForSeconds(mendSkill.mendInterval);
+            }
+
+            Debug.Log(GetDebugPrefix(nameof(ModulePassive)) + " Passive routine ended");
+        }
+
+        private void Mend(SkillMend mendSkill, params RagdollHand[] hands)
+        {
+            if (mendSkill == null)
+            {
+                Debug.LogError(GetDebugPrefix(nameof(Mend)) + " Skill data not present");
                 return;
             }
 
-            // Perform below code if the alt use button is being pressed
-
-            Creature playerCreature = Vampire?.Creature;
-            if (Utils.CheckError(() => playerCreature == null, "Mend module is not attached to a vampire or creature") || Utils.CheckError(() => !playerCreature.isPlayer, "Mend module is attached to a creature that is not the player"))
-                return;
-
-            RagdollHand ragdollHand = handSide == Side.Left ? playerCreature.handLeft : playerCreature.handRight;
-            Creature grabbedCreature = ragdollHand?.grabbedHandle?.GetComponentInParent<RagdollPart>()?.ragdoll?.creature ?? ragdollHand?.grabbedHandle?.GetComponentInChildren<RagdollPart>()?.ragdoll?.creature;
-            if (Utils.CheckError(() => grabbedCreature == null, "Player creature of mend module is not grabbing another creature in the " + handSide.ToString() + " hand"))
-                return;
-
-            Coroutine newRoutine = StartCoroutine(MendRoutine(hand, grabbedCreature));
-            if (handSide == Side.Left)
-                leftHandRoutine = newRoutine;
-            else
-                rightHandRoutine = newRoutine;
-        }
-
-        private IEnumerator MendRoutine(PlayerControl.Hand hand, Creature target)
-        {
-            while (hand != null && target != null && Vampire?.Creature != null)
+            if (hands.Length <= 0)
             {
-                if (!hand.gripPressed || !hand.alternateUsePressed) break;
+                Debug.LogError(GetDebugPrefix(nameof(Mend)) + " No hands to use for mending");
+                return;
+            }
 
-                if (target.isKilled || target.currentHealth >= target.maxHealth)
+            for (int i = 0; i < hands.Length; i++)
+            {
+                RagdollHand hand = hands[i];
+                if (hand == null)
                 {
-                    yield return new WaitForSeconds(skill.mendInterval);
+                    Debug.LogError(GetDebugPrefix(nameof(Mend)) + " Current mend hand is null");
                     continue;
                 }
 
-                Creature mender = Vampire.Creature;
-                mender.Damage(skill.damageToHealer);
+                Creature grabbedCreature = hand?.grabbedHandle?.GetComponentInParent<RagdollPart>()?.ragdoll?.creature ?? hand?.grabbedHandle?.GetComponentInChildren<RagdollPart>()?.ragdoll?.creature;
+                if (grabbedCreature == null) continue;
 
-                float healAmount = skill.healingToTarget;
-                if (target.IsVampire(out Vampire vampire) && vampire.Sire == Vampire)
+                Debug.Log(GetDebugPrefix(nameof(Mend)) + " " + hand.side.ToString() + " hand holding creature");
+
+                PlayerControl.Hand controlHand = PlayerControl.GetHand(hand.side);
+                if (controlHand == null)
+                {
+                    Debug.LogError(GetDebugPrefix(nameof(Mend)) + " No control hand for " + hand.side.ToString() + " hand");
+                    continue;
+                }
+                if (!controlHand.alternateUsePressed)
+                {
+                    Debug.LogError(GetDebugPrefix(nameof(Mend)) + " " + hand.side.ToString() + " hand not pressing alt use button");
+                    continue;
+                }
+
+                float damage = mendSkill.damageToHealer;
+                float healAmount = mendSkill.healingToTarget;
+                if (grabbedCreature.IsVampire(out Vampire grabbedVampire) && grabbedVampire.sireline.Sire == moduleVampire)
+                {
+                    damage *= 0.1f;
                     healAmount *= 2.0f;
-                target.Heal(healAmount);
+                }
 
-                yield return new WaitForSeconds(skill.mendInterval);
+                hand.ragdoll.creature.Damage(damage);
+                grabbedCreature.Heal(healAmount);
             }
         }
+
     }
 }

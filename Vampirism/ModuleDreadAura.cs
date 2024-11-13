@@ -35,13 +35,13 @@ namespace Vampirism.Skill
 
         private void DreadUpdate(SkillDreadAura dreadAuraSkill)
         {
-            if (moduleVampire?.creature == null) return;
+            if (moduleVampire?.Creature == null) return;
 
             // A creature can be a target for the dread aura if creature is not null, creature is not the module vampire, either the creature is not a vampire or it is not the spawn of the module vampire
-            List<Creature> targets = Creature.allActive.FindAll(creature => creature != null && creature != moduleVampire.creature && (!creature.IsVampire(out Vampire spawn) || spawn.sireline.Sire != moduleVampire));
+            List<Creature> targets = Creature.allActive.FindAll(creature => creature != null && creature != moduleVampire.Creature && (!creature.IsVampire(out Vampire spawn) || spawn.sireline.Sire != moduleVampire));
             if (targets == null || targets.Count == 0) return;
 
-            List<Creature> nearTargets = targets.FindAll(creature => Vector3.Distance(creature.transform.position, moduleVampire.creature.transform.position) < dreadAuraSkill.auraRange);
+            List<Creature> nearTargets = targets.FindAll(creature => Vector3.Distance(creature.transform.position, moduleVampire.Creature.transform.position) < dreadAuraSkill.auraRange);
             if (nearTargets == null || nearTargets.Count == 0) return;
 
             foreach (Creature target in nearTargets)

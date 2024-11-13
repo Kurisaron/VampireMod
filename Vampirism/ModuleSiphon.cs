@@ -20,25 +20,34 @@ namespace Vampirism.Skill
 
         public override IEnumerator ModulePassive()
         {
-            while (moduleVampire != null && moduleVampire.creature != null)
+            //Debug.Log(GetDebugPrefix(nameof(ModulePassive)) + " Siphon module passive routine started");
+            SkillSiphon skillSiphon = GetSkill<SkillSiphon>();
+            
+            while (moduleVampire?.Creature != null && skillSiphon != null)
             {
+                //Debug.Log(GetDebugPrefix(nameof(ModulePassive)) + " Siphon module passive tick start");
+
                 SiphonUpdate();
-                bool hasTemporalSiphon = moduleVampire.creature.HasSkill("TemporalSiphon");
-                if (GetSkill() is SkillSiphon skillSiphon)
-                {
-                    float siphonInterval = skillSiphon.siphonInterval;
-                    if (hasTemporalSiphon)
-                        yield return new WaitForSecondsRealtime(siphonInterval);
-                    else
-                        yield return new WaitForSeconds(siphonInterval);
-                }
+
+                //Debug.Log(GetDebugPrefix(nameof(ModulePassive)) + " Siphon module passive tick end");
+                bool hasTemporalSiphon = moduleVampire.Creature.HasSkill("TemporalSiphon");
+                if (hasTemporalSiphon)
+                    yield return new WaitForSecondsRealtime(skillSiphon.siphonInterval);
                 else
-                    break;
+                    yield return new WaitForSeconds(skillSiphon.siphonInterval);
                 
             }
 
+            if (moduleVampire?.Creature == null)
+                Debug.LogError(GetDebugPrefix(nameof(ModulePassive)) + " Module vampire/creature is null");
+
+            if (skillSiphon == null)
+                Debug.LogError(GetDebugPrefix(nameof(ModulePassive)) + " Siphon skill is null");
+
             if (sfxInstance != null)
                 sfxInstance.Despawn();
+
+            //Debug.Log(GetDebugPrefix(nameof(ModulePassive)) + " Siphon module passive routine ended");
         }
 
         private void SiphonUpdate()
@@ -67,7 +76,7 @@ namespace Vampirism.Skill
             if (applyDamage)
                 target?.Damage(damage, DamageType.Energy);
             if (applyHeal)
-                source?.creature?.Heal(damage);
+                source?.Creature?.Heal(damage);
             if (applyPower)
                 source?.power?.GainPower(damage);
 
@@ -96,17 +105,17 @@ namespace Vampirism.Skill
 
         private Creature FindTarget()
         {
-            Vector3 sourcePosition = moduleVampire.creature.jaw.position;
+            Vector3 sourcePosition = moduleVampire.Creature.jaw.position;
 
             SkillSiphon siphonSkill = GetSkill<SkillSiphon>();
             if (Utils.CheckError(() => siphonSkill == null, "No skill data present or skill is not siphon skill")) return null;
 
             // Find all colliders within siphon range that belong to a creature that is not the siphoner
-            List<Collider> targetColliders = Physics.OverlapSphere(sourcePosition, moduleVampire.creature.mouthRelay.mouthRadius * siphonSkill.siphonMouthRangeMult).ToList().FindAll(collider =>
+            List<Collider> targetColliders = Physics.OverlapSphere(sourcePosition, moduleVampire.Creature.mouthRelay.mouthRadius * siphonSkill.siphonMouthRangeMult).ToList().FindAll(collider =>
             {
                 Creature creature = collider?.gameObject?.GetComponentInParent<RagdollPart>()?.ragdoll?.creature;
 
-                return creature != null && creature != moduleVampire.creature && !creature.isKilled;
+                return creature != null && creature != moduleVampire.Creature && !creature.isKilled;
             });
 
             if (targetColliders.Count <= 0)
@@ -114,20 +123,6 @@ namespace Vampirism.Skill
 
             // Determine which collider is closest to the siphoner's mouth
             targetColliders.SortByDistance(sourcePosition);
-
-            // DEBUG: Log the distances of the target colliders
-            for (int i = 0; i < targetColliders.Count; i++)
-            {
-                Collider collider = targetColliders[i];
-                if (collider == null)
-                {
-                    Debug.LogWarning("Collider " + i.ToString() + " is null");
-                    continue;
-                }
-
-                float distance = Vector3.Distance(collider.transform.position, sourcePosition);
-                Debug.Log("Collider " + i.ToString() + " is " + distance.ToString() + " distance units away from siphon source");
-            }
 
             Collider targetCollider = targetColliders[0];
             if (targetCollider == null)
@@ -146,7 +141,7 @@ namespace Vampirism.Skill
                 SkillSiphon siphonSkill = GetSkill<SkillSiphon>();
                 if (siphonSkill == null) return;
 
-                sfxInstance = siphonSkill.siphonEffectData.Spawn(moduleVampire.creature.ragdoll.parts.Find(part => part.type == RagdollPart.Type.Head).transform, false, null, moduleVampire.creature.isPlayer);
+                sfxInstance = siphonSkill.siphonEffectData.Spawn(moduleVampire.Creature.ragdoll.parts.Find(part => part.type == RagdollPart.Type.Head).transform, false, null, moduleVampire.Creature.isPlayer);
                 sfxInstance.Play();
             }
             else

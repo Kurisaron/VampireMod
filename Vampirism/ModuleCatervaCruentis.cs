@@ -10,8 +10,7 @@ namespace Vampirism.Skill
 {
     public class ModuleCatervaCruentis : VampireModule
     {
-        private List<SkillData> activeSkills = new List<SkillData>();
-
+        
         public override string GetSkillID() => "CatervaCruentis";
 
         public override void ModuleLoaded(Vampire vampire)
@@ -39,75 +38,109 @@ namespace Vampirism.Skill
 
         private void OnSkillLoaded(SkillData skillData, Creature creature)
         {
-            if (skillData == null || creature == null || moduleVampire?.creature == null)
+            if (skillData == null || creature == null || moduleVampire?.Creature == null)
                 return;
 
-            if (creature != moduleVampire.creature)
+            if (creature != moduleVampire.Creature)
                 return;
 
             SkillCatervaCruentis catervaCruentisSkill = GetSkill<SkillCatervaCruentis>();
-            if (catervaCruentisSkill == null) return;
-
-            List<string> inheritableSkills = catervaCruentisSkill.inheritableSkillIds;
-            if (inheritableSkills == null || inheritableSkills.Count <= 0)
+            if (catervaCruentisSkill == null)
+            {
+                Debug.LogError(GetDebugPrefix(nameof(OnSkillLoaded)) + " Skill data is not present");
                 return;
+            }
 
+            List<string> inheritableSkills = catervaCruentisSkill.inheritableSkillIDs;
+            if (inheritableSkills == null || inheritableSkills.Count <= 0)
+            {
+                Debug.LogError(GetDebugPrefix(nameof(OnSkillLoaded)) + " Skill data does not contain any IDs for skills to inherit");
+                return;
+            }
+                
             if (!inheritableSkills.Contains(skillData.id))
                 return;
 
-            activeSkills.Add(skillData);
             moduleVampire.sireline.PerformSpawnAction(spawn =>
             {
-                Creature spawnCreature = spawn?.creature;
+                Creature spawnCreature = spawn?.Creature;
                 if (spawnCreature == null || spawnCreature.isPlayer) return;
 
-                if (!spawnCreature.HasSkill(skillData))
-                    spawnCreature.TryAddSkill(skillData);
+                AddSkillToSpawn(spawnCreature, skillData.id);
+                    
             });
         }
 
         private void OnSkillUnloaded(SkillData skillData, Creature creature)
         {
-            if (skillData == null || creature == null || moduleVampire?.creature == null)
+            if (skillData == null || creature == null || moduleVampire?.Creature == null)
                 return;
 
-            if (creature != moduleVampire.creature)
+            if (creature != moduleVampire.Creature)
                 return;
 
             SkillCatervaCruentis catervaCruentisSkill = GetSkill<SkillCatervaCruentis>();
-            if (catervaCruentisSkill == null) return;
-
-            List<string> inheritableSkills = catervaCruentisSkill.inheritableSkillIds;
-            if (inheritableSkills == null || inheritableSkills.Count <= 0)
+            if (catervaCruentisSkill == null)
+            {
+                Debug.LogError(GetDebugPrefix(nameof(OnSkillUnloaded)) + " Skill data is not present");
                 return;
+            }
+
+            List<string> inheritableSkills = catervaCruentisSkill.inheritableSkillIDs;
+            if (inheritableSkills == null || inheritableSkills.Count <= 0)
+            {
+                Debug.LogError(GetDebugPrefix(nameof(OnSkillUnloaded)) + " Skill data does not contain any IDs for skills to inherit");
+                return;
+            }
 
             if (!inheritableSkills.Contains(skillData.id))
                 return;
 
             moduleVampire.sireline.PerformSpawnAction(spawn =>
             {
-                Creature spawnCreature = spawn?.creature;
+                Creature spawnCreature = spawn?.Creature;
                 if (spawnCreature == null || spawnCreature.isPlayer) return;
 
-                if (spawnCreature.HasSkill(skillData))
-                    spawnCreature.TryRemoveSkill(skillData);
+                RemoveSkillFromSpawn(spawnCreature, skillData.id);
             });
-            activeSkills.Remove(skillData);
         }
 
-        private void OnSired(Vampire vampire)
+        private void OnSired(Vampire spawn)
         {
-            if (vampire?.creature == null || moduleVampire == null || vampire == moduleVampire || vampire.sireline.Sire != moduleVampire)
+            if (spawn?.Creature == null || moduleVampire == null || spawn == moduleVampire || spawn.sireline.Sire != moduleVampire)
                 return;
 
-            if (activeSkills == null || activeSkills.Count <= 0)
-                return;
-
-            Creature spawnCreature = vampire.creature;
-            foreach (SkillData skillData in activeSkills)
+            Creature sireCreature = moduleVampire?.Creature;
+            if (sireCreature == null)
             {
-                if (!spawnCreature.HasSkill(skillData))
-                    spawnCreature.ForceLoadSkill(skillData.id);
+                Debug.LogError(GetDebugPrefix(nameof(OnSired)) + " Sire creature is not present");
+                return;
+            }
+
+            SkillCatervaCruentis skill = GetSkill<SkillCatervaCruentis>();
+            if (skill == null)
+            {
+                Debug.LogError(GetDebugPrefix(nameof(OnSired)) + " Skill data is not present");
+                return;
+            }
+
+            List<string> inheritableSkills = skill.inheritableSkillIDs;
+            if (inheritableSkills == null || inheritableSkills.Count <= 0)
+            {
+                Debug.LogError(GetDebugPrefix(nameof(OnSired)) + " Skill data does not contain any IDs for skills to inherit");
+                return;
+            }
+            List<string> activeSkills = inheritableSkills.FindAll(skillID => sireCreature.HasSkill(skillID));
+            if (activeSkills == null ||  activeSkills.Count <= 0)
+            {
+                Debug.LogError(GetDebugPrefix(nameof(OnSired)) + " Sire creature does not have any skills for spawn to inherit");
+                return;
+            }
+
+            Creature spawnCreature = spawn.Creature;
+            foreach (string skillID in activeSkills)
+            {
+                AddSkillToSpawn(spawnCreature, skillID);
             }
         }
 
@@ -116,18 +149,79 @@ namespace Vampirism.Skill
             if (moduleVampire == null)
                 return;
 
+            Creature sireCreature = moduleVampire?.Creature;
+            if (sireCreature == null)
+            {
+                Debug.LogError(GetDebugPrefix(nameof(RemoveInheritableSkills)) + " Sire creature is not present");
+                return;
+            }
+
+            SkillCatervaCruentis skill = GetSkill<SkillCatervaCruentis>();
+            if (skill == null)
+            {
+                Debug.LogError(GetDebugPrefix(nameof(RemoveInheritableSkills)) + " Skill data is not present");
+                return;
+            }
+
+            List<string> inheritableSkills = skill.inheritableSkillIDs;
+            if (inheritableSkills == null || inheritableSkills.Count <= 0)
+            {
+                Debug.LogError(GetDebugPrefix(nameof(RemoveInheritableSkills)) + " Skill data does not contain any IDs for skills to inherit");
+                return;
+            }
+            List<string> activeSkills = inheritableSkills.FindAll(skillID => sireCreature.HasSkill(skillID));
+            if (activeSkills == null || activeSkills.Count <= 0)
+            {
+                Debug.LogError(GetDebugPrefix(nameof(RemoveInheritableSkills)) + " Sire creature does not have any skills for spawn to inherit");
+                return;
+            }
+
+
             moduleVampire.sireline.PerformSpawnAction(spawn =>
             {
-                Creature spawnCreature = spawn?.creature;
+                Creature spawnCreature = spawn?.Creature;
                 if (spawnCreature == null || spawnCreature.isPlayer) return;
-                foreach (SkillData skillData in activeSkills)
+                
+                foreach (string skillID in activeSkills)
                 {
-                    if (!spawnCreature.HasSkill(skillData))
-                        spawnCreature.ForceLoadSkill(skillData.id);
+                    RemoveSkillFromSpawn(spawnCreature, skillID);
                 }
             });
 
-            activeSkills.Clear();
+        }
+
+        private void AddSkillToSpawn(Creature spawnCreature, string skillID)
+        {
+            Debug.Log(GetDebugPrefix(nameof(AddSkillToSpawn)) + " Attempting to add skill " + (skillID ?? "NULL") + " to spawn");
+            
+            if (spawnCreature == null)
+            {
+                Debug.Log(GetDebugPrefix(nameof(AddSkillToSpawn)) + " Spawn creature is null");
+                return;
+            }
+
+            if (!spawnCreature.HasSkill(skillID))
+            {
+                spawnCreature.TryAddSkill(skillID);
+                Debug.Log(GetDebugPrefix(nameof(AddSkillToSpawn)) + " Spawn " + (spawnCreature?.gameObject?.name ?? "NULL") + " now has skill " + (skillID ?? "NULL"));
+            }
+        }
+
+        private void RemoveSkillFromSpawn(Creature spawnCreature, string skillID)
+        {
+            Debug.Log(GetDebugPrefix(nameof(RemoveSkillFromSpawn)) + " Attempting to remove skill " + (skillID ?? "NULL") + " from spawn");
+
+            if (spawnCreature == null)
+            {
+                Debug.Log(GetDebugPrefix(nameof(RemoveSkillFromSpawn)) + " Spawn creature is null");
+                return;
+            }
+
+            if (spawnCreature.HasSkill(skillID))
+            {
+                spawnCreature.TryRemoveSkill(skillID);
+                Debug.Log(GetDebugPrefix(nameof(RemoveSkillFromSpawn)) + " Spawn " + (spawnCreature?.gameObject?.name ?? "NULL") + " no longer has skill " + (skillID ?? "NULL"));
+            }
         }
     }
 }

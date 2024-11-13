@@ -27,7 +27,7 @@ namespace Vampirism.Skill
 
         public override void ModuleUnloaded()
         {
-            moduleVampire?.creature?.currentLocomotion?.RemoveSpeedModifier(this);
+            moduleVampire?.Creature?.currentLocomotion?.RemoveSpeedModifier(this);
 
             VampireEvents.sireEvent -= new Vampire.VampireEvent(OnPowerGained);
             if (moduleVampire?.power != null)
@@ -46,7 +46,7 @@ namespace Vampirism.Skill
 
         private void SetStrideModifier()
         {
-            Creature creature = moduleVampire?.creature;
+            Creature creature = moduleVampire?.Creature;
             SkillStride strideSkill = GetSkill<SkillStride>();
             if (creature == null || strideSkill == null) return;
 

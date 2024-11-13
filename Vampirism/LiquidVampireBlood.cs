@@ -26,7 +26,7 @@ namespace Vampirism
             if (receivingCreature.IsVampire(out Vampire receivingVampire))
             {
                 receivingCreature.Heal(potency * dilution);
-                receivingVampire.GainPower(potency * dilution);
+                receivingVampire.power?.GainPower(potency * dilution);
             }
             else
                 receivingCreature.Vampirize(potency * dilution);

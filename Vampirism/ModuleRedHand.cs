@@ -13,39 +13,42 @@ namespace Vampirism.Skill
 
         private (RagdollHand left, RagdollHand right) hands;
 
-        protected override void Awake()
+        public override string GetSkillID() => "RedHanded";
+
+        public override void ModuleLoaded(Vampire vampire)
         {
-            base.Awake();
+            base.ModuleLoaded(vampire);
 
-            Creature creature = Vampire?.Creature;
-            if (creature == null) return;
+            Creature moduleCreature = moduleVampire?.Creature;
+            if (moduleCreature == null) return;
 
-            hands = (creature.handLeft, creature.handRight);
+            hands = (moduleCreature.handLeft, moduleCreature.handRight);
             hands.left.OnPunchHitEvent -= new RagdollHand.PunchHitEvent(OnPunchHit);
             hands.left.OnPunchHitEvent += new RagdollHand.PunchHitEvent(OnPunchHit);
             hands.right.OnPunchHitEvent -= new RagdollHand.PunchHitEvent(OnPunchHit);
             hands.right.OnPunchHitEvent += new RagdollHand.PunchHitEvent(OnPunchHit);
         }
 
-        protected override void OnDestroy()
+        public override void ModuleUnloaded()
         {
             hands.left.OnPunchHitEvent -= new RagdollHand.PunchHitEvent(OnPunchHit);
             hands.right.OnPunchHitEvent -= new RagdollHand.PunchHitEvent(OnPunchHit);
 
-            base.OnDestroy();
+            base.ModuleUnloaded();
         }
 
         private void OnPunchHit(RagdollHand hand, CollisionInstance hit, bool fist)
         {
-            if (hand?.creature == null || Vampire?.Creature == null || hand.creature != Vampire.Creature) return;
+            if (hand?.creature == null || moduleVampire?.Creature == null || hand.creature != moduleVampire.Creature) return;
             
             RagdollPart hitPart = hit?.damageStruct.hitRagdollPart;
             if (hitPart == null || hitPart == hand) return;
 
             Creature targetCreature = hitPart.ragdoll?.creature;
-            if (targetCreature == null || targetCreature == Vampire.Creature) return;
+            if (targetCreature == null || targetCreature == moduleVampire.Creature) return;
 
-            ModuleSiphon.Siphon(Vampire, targetCreature, hit.damageStruct.damage);
+            ModuleSiphon siphonModule = moduleVampire.skill?.GetModule<ModuleSiphon>("Siphon");
+            siphonModule?.Siphon(moduleVampire, targetCreature, hit.damageStruct.damage, false);
         }
     }
 }

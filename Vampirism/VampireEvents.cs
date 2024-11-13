@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using ThunderRoad;
 using Vampirism.Skill;
-using static Vampirism.VampireEvents;
 
 namespace Vampirism
 {

@@ -20,14 +20,50 @@ namespace Vampirism
         public SireManager sireline { get; private set; }
         public AppearanceManager appearance { get; private set; }
 
-        public Creature creature { get; private set; }
-        private bool isPlayer { get=> creature != null ? creature.isPlayer : false; }
+
+        private Creature creature;
+        public Creature Creature
+        {
+            get => creature;
+            set
+            {
+                if (value == null || creature == value) return;
+
+                if (creature != null)
+                {
+                    creature.OnKillEvent -= new Creature.KillEvent(OnDeath);
+                }
+
+                creature = value;
+
+                if (creature != null)
+                {
+                    creature.OnKillEvent -= new Creature.KillEvent(OnDeath);
+                    creature.OnKillEvent += new Creature.KillEvent(OnDeath);
+                }
+            }
+
+        }
+        public bool isPlayer { get=> creature != null ? creature.isPlayer : false; }
 
         /// <summary>
         /// Event invoked just before a vampire is cured
         /// </summary>
         public event VampireEvent curedEvent;
 
+        private void OnDeath(CollisionInstance collisionInstance, EventTime eventTime)
+        {
+            if (eventTime == EventTime.OnStart) return;
+
+            if (sireline?.Sire != null)
+                sireline.Sire = null;
+
+            if (creature != null)
+                creature.OnKillEvent -= new Creature.KillEvent(OnDeath);
+
+            skill?.RemoveAllSkills();
+            Destroy(this);
+        }
 
         public delegate void VampireEvent(Vampire vampire);
 
@@ -65,7 +101,7 @@ namespace Vampirism
             /// <param name="amount">Amount of power to provide the vampire</param>
             public void GainPower(float amount)
             {
-                powerLevel += amount;
+               PowerLevel += amount;
 
                 if (powerGainedEvent != null)
                     powerGainedEvent(vampire);
@@ -96,7 +132,7 @@ namespace Vampirism
 
                 VampireModule newModule = skill.CreateModule();
                 newModule?.ModuleLoaded(vampire);
-                Coroutine newPassive = newModule != null ? vampire.StartCoroutine(newModule.ModulePassive()) : null;
+                Coroutine newPassive = newModule == null || newModule.ModulePassive() == null ? null : vampire.StartCoroutine(newModule.ModulePassive());
 
                 skills.Add(skillID, (newModule, newPassive));
             }
@@ -121,6 +157,28 @@ namespace Vampirism
                 }
 
                 skills.Remove(skillID);
+            }
+
+            public void RemoveAllSkills()
+            {
+                if (skills == null | skills.Count == 0) return;
+
+                foreach (KeyValuePair<string, (VampireModule module, Coroutine passive)> skill in skills)
+                {
+                    (VampireModule module, Coroutine passive) skillStatus = skill.Value;
+                    if (skillStatus.passive != null)
+                    {
+                        vampire.StopCoroutine(skillStatus.passive);
+                        skillStatus.passive = null;
+                    }
+                    if (skillStatus.module != null)
+                    {
+                        skillStatus.module.ModuleUnloaded();
+                        skillStatus.module = null;
+                    }
+                }
+
+                skills.Clear();
             }
 
             public VampireModule GetModule(string skillID)
@@ -154,7 +212,7 @@ namespace Vampirism
 
             public SireManager(Vampire vampire, Vampire sire = null) : base(vampire)
             {
-
+                Sire = sire;
             }
 
             private void AddSire()
@@ -199,6 +257,8 @@ namespace Vampirism
 
                 sire.sireline.spawn.Remove(vampire);
             }
+
+            public bool HasSpawn(Vampire check) => spawn.Contains(check);
 
             /// <summary>
             /// Perform an action for each spawn
@@ -256,7 +316,9 @@ namespace Vampirism
                 Creature creature = vampire?.creature;
                 if (creature == null || vampire != this.vampire) return;
 
-                (Color iris, Color sclera) EyeColors = (Color.red, HumanEyes.sclera);
+                PowerManager power = vampire.power;
+                Color scleraColor = Color.Lerp(HumanEyes.sclera, Color.black, power == null ? 0 : (power.PowerLevel / 12345.0f));
+                (Color iris, Color sclera) EyeColors = (Color.red, scleraColor);
                 creature.SetColor(EyeColors.iris, Creature.ColorModifier.EyesIris);
                 creature.SetColor(EyeColors.sclera, Creature.ColorModifier.EyesSclera);
             }
@@ -283,14 +345,37 @@ namespace Vampirism
         {
             public static Vampire Vampirize(Creature creature, float startingPower = 1.0f, Vampire sire = null)
             {
+                string functionName = "[Vampire.VampireUtility.Vampirize]";
+
                 // attempt to find a Vampire script attached to the given creature in case it is already present
                 // add an instance of the Vampire script if it is not already present
                 Vampire newVampire = creature.gameObject.GetComponent<Vampire>() ?? creature.gameObject.AddComponent<Vampire>();
-                newVampire.creature = creature;
-                newVampire.power = new PowerManager(newVampire, startingPower);
-                newVampire.skill = new SkillManager(newVampire);
-                newVampire.sireline = new SireManager(newVampire, sire);
-                newVampire.appearance = new AppearanceManager(newVampire);
+                newVampire.Creature = creature;
+
+                // Vampire's power
+                if (newVampire.power == null) newVampire.power = new PowerManager(newVampire, startingPower);
+                else
+                {
+                    PowerManager vampirePower = newVampire.power;
+                    float powerDifference = startingPower - vampirePower.PowerLevel;
+                    if (powerDifference > 0) vampirePower.GainPower(powerDifference);
+                }
+
+                // Vampire's skills
+                newVampire.skill = newVampire.skill ?? new SkillManager(newVampire);
+
+                // Vampire's sireline (sire and spawn)
+                if (newVampire.sireline == null) newVampire.sireline = new SireManager(newVampire, sire);
+                else
+                {
+                    SireManager vampireSire = newVampire.sireline;
+                    vampireSire.Sire = sire;
+                }
+
+                // Vampire's appearance
+                newVampire.appearance = newVampire.appearance ?? new AppearanceManager(newVampire);
+
+                Debug.Log(functionName + " Checking if creature being vampirized is player...");
 
                 VampireEvents.Instance.InvokeSireEvent(newVampire);
 
@@ -315,7 +400,6 @@ namespace Vampirism
                 vampire = creature.gameObject.GetComponent<Vampire>();
                 return vampire != null;
             }
-
         }
 
     }

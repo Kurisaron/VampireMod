@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Vampirism
 {
-    public class VampireScript<T> : ThunderScript where T : class
+    public abstract class VampireScript<T> : ThunderScript where T : class
     {
         public static T Instance { get; private set; }
         public static string DebugKey { get => typeof(T).Name + ": "; }

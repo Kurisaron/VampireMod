@@ -29,11 +29,16 @@ namespace Vampirism.Skill
 
         private void OnSiphon(Vampire source, Creature target, float damage)
         {
-            if (source == null || moduleVampire == null || source != moduleVampire) return;
+            SkillContinuity continuitySkill = GetSkill<SkillContinuity>();
+            if (source == null || moduleVampire == null || continuitySkill == null || source != moduleVampire) return;
 
             if (moduleVampire.skill.GetModule("Siphon") is ModuleSiphon siphonModule)
             {
-                moduleVampire.sireline.PerformSpawnAction(spawn => siphonModule?.Siphon(spawn, target, damage, false));
+                Vector2 efficiencyScale = continuitySkill.efficiencyScale;
+                float powerScale = moduleVampire.power.PowerLevel / continuitySkill.powerAtEfficiencyMax;
+                float efficiencyMult = continuitySkill.clampEfficiency ? Mathf.Lerp(efficiencyScale.x, efficiencyScale.y, powerScale) : Mathf.LerpUnclamped(efficiencyScale.x, efficiencyScale.y, powerScale);
+
+                moduleVampire.sireline.PerformSpawnAction(spawn => siphonModule?.Siphon(spawn, target, damage * efficiencyMult, false));
             }
             
         }

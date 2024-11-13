@@ -11,7 +11,7 @@ namespace Vampirism.Skill
     [Serializable]
     public class SkillCatervaCruentis : VampireSkill
     {
-        public List<string> inheritableSkillIds;
+        public List<string> inheritableSkillIDs;
 
         public override VampireModule CreateModule() => CreateModule<ModuleCatervaCruentis>();
 

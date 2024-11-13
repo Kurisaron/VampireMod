@@ -10,12 +10,15 @@ using UnityEngine;
 namespace Vampirism.Skill
 {
     [Serializable]
-    public class SkillTemporalSiphon : SkillData
+    public class SkillTemporalSiphon : VampireSkill
     {
         public string statusId;
         [NonSerialized]
         public StatusData statusData;
-        public float duration = 1f;
+        public float baseDuration = 1f;
+        public Vector2 durationMultScale = new Vector2(1.0f, 10.0f);
+        public float powerAtDurationMultMax = 14269.0f;
+        public bool clampDurationMult = false;
         public float slowMult = 0.5f;
 
         public override void OnCatalogRefresh()
@@ -25,32 +28,7 @@ namespace Vampirism.Skill
             statusData = Catalog.GetData<StatusData>(statusId);
         }
 
-        public override void OnSkillLoaded(SkillData skillData, Creature creature)
-        {
-            base.OnSkillLoaded(skillData, creature);
+        public override VampireModule CreateModule() => CreateModule<ModuleTemporalSiphon>();
 
-            Vampire vampire = creature.AffirmVampirism();
-
-            vampire.AddModule<ModuleTemporalSiphon>();
-            ModuleTemporalSiphon.skill = this;
-        }
-
-        public override void OnSkillUnloaded(SkillData skillData, Creature creature)
-        {
-            base.OnSkillUnloaded(skillData, creature);
-
-            ModuleTemporalSiphon.skill = null;
-            if (creature.IsVampire(out Vampire vampire))
-            {
-                vampire.RemoveModule<ModuleTemporalSiphon>();
-            }
-            else
-            {
-                ModuleTemporalSiphon temporalModule = creature.gameObject.GetComponent<ModuleTemporalSiphon>();
-                if (temporalModule == null) return;
-
-                MonoBehaviour.Destroy(temporalModule);
-            }
-        }
     }
 }

@@ -27,7 +27,8 @@ namespace Vampirism.Skill
 
         public override void ModuleUnloaded()
         {
-            moduleVampire?.creature?.RemoveDamageMultiplier(this);
+            moduleVampire?.Creature?.healthModifier?.Remove(this);
+            moduleVampire?.Creature?.RemoveDamageMultiplier(this);
 
             VampireEvents.sireEvent -= new Vampire.VampireEvent(OnPowerGained);
             if (moduleVampire?.power != null)
@@ -46,15 +47,24 @@ namespace Vampirism.Skill
 
         private void SetFortitudeModifier()
         {
-            Creature creature = moduleVampire?.creature;
+            Creature creature = moduleVampire?.Creature;
             SkillFortitude fortitudeSkill = GetSkill<SkillFortitude>();
             if (creature == null || fortitudeSkill == null) return;
 
-            float levelScale = moduleVampire.power.PowerLevel / fortitudeSkill.powerAtResistanceMax;
-            float resistMultiplier = fortitudeSkill.clampResistance ? Mathf.Lerp(fortitudeSkill.resistancePowerScale.x, fortitudeSkill.resistancePowerScale.y, levelScale) : Mathf.LerpUnclamped(fortitudeSkill.resistancePowerScale.x, fortitudeSkill.resistancePowerScale.y, levelScale);
-            if (resistMultiplier < 0) resistMultiplier = 0;
+            float currentPowerLevel = moduleVampire.power.PowerLevel;
 
-            creature.SetDamageMultiplier(this, resistMultiplier);
+            Vector2 healthBoostRange = fortitudeSkill.healthBoostRange;
+            float healthBoostScale = currentPowerLevel / fortitudeSkill.powerAtHealthBoostMax;
+            float healthBoostValue = fortitudeSkill.clampHealthBoost ? Mathf.Lerp(healthBoostRange.x, healthBoostRange.y, healthBoostScale) : Mathf.LerpUnclamped(healthBoostRange.x, healthBoostRange.y, healthBoostScale);
+            if (healthBoostValue < 0) healthBoostValue = 0;
+            creature.healthModifier?.Add(this, healthBoostValue);
+
+            Vector2 resistRange = fortitudeSkill.resistanceRange;
+            float resistScale = currentPowerLevel / fortitudeSkill.powerAtResistanceMax;
+            float resistValue = fortitudeSkill.clampResistance ? Mathf.Lerp(resistRange.x, resistRange.y, resistScale) : Mathf.LerpUnclamped(resistRange.x, resistRange.y, resistScale);
+            if (resistValue < 0) resistValue = 0;
+            creature.SetDamageMultiplier(this, resistValue);
+
         }
     }
 }

@@ -9,38 +9,12 @@ using UnityEngine;
 namespace Vampirism.Skill
 {
     [Serializable]
-    public class SkillShockwave : SkillData
+    public class SkillShockwave : VampireSkill
     {
         public float shockwaveRange = 10.0f;
         public float shockwavePowerMult = 1000.0f;
 
-        public override void OnSkillLoaded(SkillData skillData, Creature creature)
-        {
-            base.OnSkillLoaded(skillData, creature);
-
-            Vampire vampire = creature.AffirmVampirism();
-
-            vampire.AddModule<ModuleShockwave>();
-            ModuleShockwave.skill = this;
-        }
-
-        public override void OnSkillUnloaded(SkillData skillData, Creature creature)
-        {
-            base.OnSkillUnloaded(skillData, creature);
-
-            if (creature.IsVampire(out Vampire vampire))
-            {
-                vampire.RemoveModule<ModuleShockwave>();
-            }
-            else
-            {
-                ModuleShockwave waveModule = creature.gameObject.GetComponent<ModuleShockwave>();
-                if (waveModule == null) return;
-
-                MonoBehaviour.Destroy(waveModule);
-            }
-
-        }
+        public override VampireModule CreateModule() => CreateModule<ModuleShockwave>();
 
     }
 }

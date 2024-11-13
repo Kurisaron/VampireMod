@@ -11,6 +11,7 @@ namespace Vampirism
 {
     public static class Utils
     {
+        #region Assembly Utils
         public static Assembly[] GetAssemblies() => AppDomain.CurrentDomain.GetAssemblies();
         public static IEnumerable<Type> GetAllTypes() => GetAssemblies().SelectMany(assembly => assembly.GetTypes());
         public static IEnumerable<Type> GetAllTypes(Func<Type, bool> predicate) => GetAssemblies().SelectMany(assembly => assembly.GetTypes()).Where(predicate);
@@ -26,7 +27,8 @@ namespace Vampirism
         {
             return GetAllTypes(check => check.IsSubclassOf(type));
         }
-        
+        #endregion
+
         /// <summary>
         /// Check if the error condition is true, print message to log if so
         /// </summary>
@@ -45,6 +47,18 @@ namespace Vampirism
             bool error = condition();
             if (error) Debug.LogError(errorMessage);
             return error;
+        }
+
+        public static bool CheckError(string errorMessage, Func<bool> errorCondition) => CheckError(errorCondition, errorMessage); 
+
+        public static string GetDebugID(this object obj, string methodName = null)
+        {
+            string prefixIdentifier = obj.GetType().Name;
+            prefixIdentifier = prefixIdentifier ?? "object";
+            bool validMethodName = !(methodName == null || methodName == "" || methodName.IsNullOrEmptyOrWhitespace());
+            if (validMethodName)
+                prefixIdentifier += ("." + methodName);
+            return "[" + prefixIdentifier + "]";
         }
 
         #region List<Collider> Extensions
